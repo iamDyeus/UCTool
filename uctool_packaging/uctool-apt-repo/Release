@@ -1,0 +1,7 @@
+echo "Origin: uctool-repo
+Label: uctool-repo
+Suite: stable
+Codename: focal
+Architectures: amd64
+Components: main
+Description: APT repository for uctool"

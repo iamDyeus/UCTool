@@ -1,0 +1,11 @@
+Package: uctool
+Version: 1.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Maintainer: Aditya Arora <adityarora21022004a@example.com>
+Depends: g++, gcc, flex, bison
+Description: A CLI wrapper for unified compiler stages.
+ This is a placeholder CLI for a tool that will later integrate
+ all compiler stages using Flex, Bison, and C++.
+
