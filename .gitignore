@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+#build and temp folders for temporary object and output files
+build/
+temp/
