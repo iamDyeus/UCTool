@@ -26,6 +26,11 @@ int custom_yylex(TokenIterator* iter) {
         if (token->value == "int") return INT;
         if (token->value == "return") return RETURN;
         if (token->value == "float") return FLOAT;
+        if (token->value == "if") return IF;
+        if (token->value == "else") return ELSE;
+        if (token->value == "for") return FOR;
+        if (token->value == "while") return WHILE;
+        if (token->value == "struct") return STRUCT;
         return -1; // Other keywords not parsed yet
     } else if (token->type == "Identifier") {
         yylval.str = new std::string(token->value);
@@ -36,6 +41,7 @@ int custom_yylex(TokenIterator* iter) {
         if (token->value == "{") return LBRACE;
         if (token->value == "}") return RBRACE;
         if (token->value == ";") return SEMICOLON;
+        if (token->value == ",") return COMMA;
         return -1; // Other punctuation not parsed
     } else if (token->type == "String") {
         yylval.str = new std::string(token->value);
@@ -53,11 +59,18 @@ int custom_yylex(TokenIterator* iter) {
         }
         yylval.str = new std::string(token->value);
         return PREPROCESSOR;
-    } else if (token->type == "Operator") {
-        if (token->value == "=") {
-            yylval.str = new std::string(token->value);
-            return ASSIGN;
-        }
+    } else if (token->type == "Operator" || token->type == "Relational Operator") {
+        if (token->value == "=") return ASSIGN;
+        if (token->value == ">") return GT;
+        if (token->value == "<") return LT;
+        if (token->value == "==") return EQ;
+        if (token->value == "+") return PLUS;
+        if (token->value == "-") return MINUS;
+        if (token->value == "*") return MULT;
+        if (token->value == "/") return DIV;
+        if (token->value == "%") return MOD;
+        if (token->value == "&") return ADDRESS;
+        if (token->value == "++") return PLUSPLUS;
         return -1; // Other operators not parsed
     }
     return -1; // Fallback
@@ -78,16 +91,27 @@ void yyerror(const char* msg) {
     FunctionNode* function;
     StatementNode* statement;
     std::vector<StatementNode*>* decl_list;
+    std::vector<ASTNode*>* expr_list;
 }
 
 %token INT RETURN FLOAT ASSIGN
+%token IF ELSE FOR WHILE STRUCT
+%token GT LT EQ PLUS MINUS MULT DIV MOD ADDRESS PLUSPLUS
+%token COMMA
 %token <str> PREPROCESSOR IDENTIFIER STRING NUMBER
 %token LPAREN RPAREN LBRACE RBRACE SEMICOLON
 
 %type <program> program
 %type <function> function
-%type <statement> preprocessor_list statement_list statement declaration
+%type <statement> preprocessor_list statement_list statement declaration local_declaration if_statement for_statement while_statement struct_declaration assignment_statement
+%type <node> expression term
 %type <decl_list> declaration_list
+%type <expr_list> expression_list
+
+%left PLUS MINUS
+%left MULT DIV MOD
+%nonassoc GT LT EQ
+%nonassoc ELSE
 
 %start program
 
@@ -104,20 +128,18 @@ program
         if ($1 && !$1->children.empty()) {
             for (const auto* node : $1->children) {
                 if (node && !node->value.empty()) {
-                    $$->children.push_back(new ASTNode(*node)); // Copy to avoid double-delete
+                    $$->children.push_back(new ASTNode(*node));
                 }
             }
         }
-        // Do not delete $1; its children are now owned by $$->children
         if ($2 && !$2->empty()) {
             for (const auto* decl : *$2) {
                 if (decl && !decl->value.empty()) {
-                    $$->children.push_back(new ASTNode(decl->type, decl->value)); // Copy to avoid double-delete
+                    $$->children.push_back(new ASTNode(decl->type, decl->value));
                 }
             }
         }
-        // Do not delete $2; its elements are now owned by $$->children
-        delete $2; // Delete the vector, not its elements
+        delete $2; // Delete the vector
         parse_result = $$; 
         std::cout << "ProgramNode built\n"; // Debug
     }
@@ -139,8 +161,18 @@ preprocessor_list
 declaration_list
     : /* empty */ { $$ = new std::vector<StatementNode*>(); }
     | declaration_list declaration { 
+        std::cout << "Adding declaration to declaration_list\n"; // Debug
         $$ = $1 ? $1 : new std::vector<StatementNode*>();
-        if ($2 && !$2->value.empty()) {
+        if ($2 && !($2->value.empty())) {
+            $$->push_back($2);
+        } else {
+            delete $2;
+        }
+    }
+    | declaration_list struct_declaration { 
+        std::cout << "Adding struct_declaration to declaration_list\n"; // Debug
+        $$ = $1 ? $1 : new std::vector<StatementNode*>();
+        if ($2 && !($2->value.empty())) {
             $$->push_back($2);
         } else {
             delete $2;
@@ -157,7 +189,6 @@ function
         $$->name = $2 && !$2->empty() ? *$2 : "unknown"; 
         $$->statements = $6 && !$6->statements.empty() ? $6->statements : std::vector<StatementNode*>(); 
         delete $2; 
-        // Do not delete $6; its statements are now owned by $$->statements
         std::cout << "FunctionNode built with " << $$->statements.size() << " statements\n"; // Debug
       }
     ;
@@ -165,6 +196,7 @@ function
 statement_list
     : /* empty */ { $$ = new StatementNode(); $$->type = "Empty"; }
     | statement_list statement { 
+        std::cout << "Adding statement to statement_list\n"; // Debug
         $$ = $1 ? $1 : new StatementNode();
         $$->type = "StatementList";
         if ($2 && !$2->value.empty()) {
@@ -176,38 +208,285 @@ statement_list
     ;
 
 statement
-    : IDENTIFIER LPAREN STRING RPAREN SEMICOLON
+    : IDENTIFIER LPAREN expression_list RPAREN SEMICOLON
       { 
-        std::cout << "Building Call: " << ($1 ? *$1 : "null") << ", " << ($3 ? *$3 : "null") << "\n"; // Debug
+        std::cout << "Building Call: " << ($1 ? *$1 : "null") << "\n"; // Debug
         $$ = new StatementNode(); 
         $$->type = "Call"; 
         std::string id = ($1 && !$1->empty()) ? *$1 : "invalid";
-        std::string arg = ($3 && !$3->empty()) ? *$3 : "\"\"";
-        $$->value = id + "(" + arg + ")";
+        std::string args = "";
+        if ($3 && !$3->empty()) {
+            for (size_t i = 0; i < $3->size(); ++i) {
+                args += (*$3)[i]->value;
+                if (i < $3->size() - 1) args += ", ";
+            }
+        }
+        $$->value = id + "(" + args + ")";
+        if ($3) {
+            $$->children = *$3; // Transfer ownership
+            delete $3; // Delete the vector
+        }
         delete $1; 
-        delete $3; 
       }
-    | RETURN NUMBER SEMICOLON
+    | RETURN expression SEMICOLON
       { 
-        std::cout << "Building Return: " << ($2 ? *$2 : "null") << "\n"; // Debug
+        std::cout << "Building Return: " << ($2 ? $2->value : "null") << "\n"; // Debug
         $$ = new StatementNode(); 
         $$->type = "Return"; 
-        $$->value = ($2 && !$2->empty()) ? *$2 : "0";
+        $$->value = $2 ? $2->value : "0";
+        $$->children.push_back($2); 
+      }
+    | expression SEMICOLON
+      { 
+        std::cout << "Building Expression: " << ($1 ? $1->value : "null") << "\n"; // Debug
+        $$ = new StatementNode(); 
+        $$->type = "Expression"; 
+        $$->value = $1 ? $1->value : "unknown";
+        $$->children.push_back($1); 
+      }
+    | if_statement { $$ = $1; }
+    | for_statement { $$ = $1; }
+    | while_statement { $$ = $1; }
+    | local_declaration { $$ = $1; }
+    | assignment_statement { $$ = $1; }
+    | struct_declaration { $$ = $1; }
+    | declaration { $$ = $1; }
+    ;
+
+declaration
+    : FLOAT IDENTIFIER SEMICOLON
+      { 
+        std::cout << "Building Declaration: " << ($2 ? *$2 : "null") << "\n"; // Debug
+        $$ = new StatementNode(); 
+        $$->type = "Declaration"; 
+        std::string id = ($2 && !$2->empty()) ? *$2 : "unknown";
+        $$->value = "float " + id;
+        delete $2; 
+      }
+    | FLOAT IDENTIFIER ASSIGN expression SEMICOLON
+      { 
+        std::cout << "Building Declaration: " << ($2 ? *$2 : "null") << ", " << ($4 ? $4->value : "null") << "\n"; // Debug
+        $$ = new StatementNode(); 
+        $$->type = "Declaration"; 
+        std::string id = ($2 && !$2->empty()) ? *$2 : "unknown";
+        std::string val = ($4 && !$4->value.empty()) ? $4->value : "0.0";
+        $$->value = "float " + id + " = " + val;
+        $$->children.push_back($4); 
         delete $2; 
       }
     ;
 
-declaration
-    : FLOAT IDENTIFIER ASSIGN NUMBER SEMICOLON
+local_declaration
+    : INT IDENTIFIER SEMICOLON
       { 
-        std::cout << "Building Declaration: " << ($2 ? *$2 : "null") << ", " << ($4 ? *$4 : "null") << "\n"; // Debug
+        std::cout << "Building Local Declaration: " << ($2 ? *$2 : "null") << "\n"; // Debug
         $$ = new StatementNode(); 
-        $$->type = "Declaration"; 
+        $$->type = "LocalDeclaration"; 
         std::string id = ($2 && !$2->empty()) ? *$2 : "unknown";
-        std::string val = ($4 && !$4->empty()) ? *$4 : "0.0";
-        $$->value = "float " + id + " = " + val;
+        $$->value = "int " + id;
         delete $2; 
-        delete $4; 
+      }
+    | INT IDENTIFIER ASSIGN expression SEMICOLON
+      { 
+        std::cout << "Building Local Declaration: " << ($2 ? *$2 : "null") << ", " << ($4 ? $4->value : "null") << "\n"; // Debug
+        $$ = new StatementNode(); 
+        $$->type = "LocalDeclaration"; 
+        std::string id = ($2 && !$2->empty()) ? *$2 : "unknown";
+        std::string val = ($4 && !$4->value.empty()) ? $4->value : "0";
+        $$->value = "int " + id + " = " + val;
+        $$->children.push_back($4); 
+        delete $2; 
+      }
+    ;
+
+if_statement
+    : IF LPAREN expression RPAREN statement %prec IFX
+      { 
+        std::cout << "Building If: " << ($3 ? $3->value : "null") << "\n"; // Debug
+        $$ = new StatementNode(); 
+        $$->type = "If"; 
+        $$->value = $3 ? $3->value : "unknown";
+        $$->children.push_back($3); 
+        if ($5 && !$5->value.empty()) {
+            $$->statements.push_back($5);
+        } else {
+            delete $5;
+        }
+      }
+    | IF LPAREN expression RPAREN statement ELSE statement
+      { 
+        std::cout << "Building If-Else: " << ($3 ? $3->value : "null") << "\n"; // Debug
+        $$ = new StatementNode(); 
+        $$->type = "IfElse"; 
+        $$->value = $3 ? $3->value : "unknown";
+        $$->children.push_back($3); 
+        if ($5 && !$5->value.empty()) {
+            $$->statements.push_back($5);
+        } else {
+            delete $5;
+        }
+        if ($7 && !$7->value.empty()) {
+            $$->statements.push_back($7);
+        } else {
+            delete $7;
+        }
+      }
+    ;
+
+for_statement
+    : FOR LPAREN local_declaration expression SEMICOLON expression RPAREN LBRACE statement_list RBRACE
+      { 
+        std::cout << "Building For\n"; // Debug
+        $$ = new StatementNode(); 
+        $$->type = "For"; 
+        $$->value = ($4 ? $4->value : "unknown");
+        $$->children.push_back(new ASTNode("Init", $3->value)); 
+        $$->children.push_back($4); 
+        $$->children.push_back($6); 
+        if ($9 && !$9->statements.empty()) {
+            $$->statements = $9->statements;
+        }
+        delete $3; 
+      }
+    ;
+
+while_statement
+    : WHILE LPAREN expression RPAREN LBRACE statement_list RBRACE
+      { 
+        std::cout << "Building While: " << ($3 ? $3->value : "null") << "\n"; // Debug
+        $$ = new StatementNode(); 
+        $$->type = "While"; 
+        $$->value = $3 ? $3->value : "unknown";
+        $$->children.push_back($3); 
+        if ($6 && !$6->statements.empty()) {
+            $$->statements = $6->statements;
+        }
+      }
+    ;
+
+struct_declaration
+    : STRUCT IDENTIFIER LBRACE declaration_list RBRACE SEMICOLON
+      { 
+        std::cout << "Building Struct: " << ($2 ? *$2 : "null") << "\n"; // Debug
+        $$ = new StatementNode(); 
+        $$->type = "Struct"; 
+        std::string id = ($2 && !$2->empty()) ? *$2 : "unknown";
+        $$->value = "struct " + id;
+        if ($4 && !$4->empty()) {
+            for (const auto* decl : *$4) {
+                if (decl && !decl->value.empty()) {
+                    $$->children.push_back(new ASTNode(decl->type, decl->value));
+                }
+            }
+        }
+        delete $2; 
+        delete $4; // Delete the vector
+      }
+    ;
+
+assignment_statement
+    : IDENTIFIER ASSIGN expression SEMICOLON
+      { 
+        std::cout << "Building Assignment: " << ($1 ? *$1 : "null") << ", " << ($3 ? $3->value : "null") << "\n"; // Debug
+        $$ = new StatementNode(); 
+        $$->type = "Assignment"; 
+        std::string id = ($1 && !$1->empty()) ? *$1 : "unknown";
+        std::string val = ($3 && !$3->value.empty()) ? $3->value : "0";
+        $$->value = id + " = " + val;
+        $$->children.push_back($3); 
+        delete $1; 
+      }
+    ;
+
+expression_list
+    : /* empty */ { $$ = new std::vector<ASTNode*>(); }
+    | expression
+      { 
+        $$ = new std::vector<ASTNode*>();
+        if ($1 && !$1->value.empty()) {
+            $$->push_back($1);
+        } else {
+            delete $1;
+        }
+      }
+    | expression_list COMMA expression
+      { 
+        $$ = $1 ? $1 : new std::vector<ASTNode*>();
+        if ($3 && !$3->value.empty()) {
+            $$->push_back($3);
+        } else {
+            delete $3;
+        }
+      }
+    ;
+
+expression
+    : term { $$ = $1; }
+    | expression PLUS term { 
+        $$ = new ASTNode("Add", ($1 ? $1->value : "0") + " + " + ($3 ? $3->value : "0")); 
+        $$->children.push_back($1);
+        $$->children.push_back($3);
+      }
+    | expression MINUS term { 
+        $$ = new ASTNode("Subtract", ($1 ? $1->value : "0") + " - " + ($3 ? $3->value : "0")); 
+        $$->children.push_back($1);
+        $$->children.push_back($3);
+      }
+    | expression MULT term { 
+        $$ = new ASTNode("Multiply", ($1 ? $1->value : "0") + " * " + ($3 ? $3->value : "0")); 
+        $$->children.push_back($1);
+        $$->children.push_back($3);
+      }
+    | expression DIV term { 
+        $$ = new ASTNode("Divide", ($1 ? $1->value : "0") + " / " + ($3 ? $3->value : "0")); 
+        $$->children.push_back($1);
+        $$->children.push_back($3);
+      }
+    | expression MOD term { 
+        $$ = new ASTNode("Modulo", ($1 ? $1->value : "0") + " % " + ($3 ? $3->value : "0")); 
+        $$->children.push_back($1);
+        $$->children.push_back($3);
+      }
+    | expression GT term { 
+        $$ = new ASTNode("Greater", ($1 ? $1->value : "0") + " > " + ($3 ? $3->value : "0")); 
+        $$->children.push_back($1);
+        $$->children.push_back($3);
+      }
+    | expression LT term { 
+        $$ = new ASTNode("Less", ($1 ? $1->value : "0") + " < " + ($3 ? $3->value : "0")); 
+        $$->children.push_back($1);
+        $$->children.push_back($3);
+      }
+    | expression EQ term { 
+        $$ = new ASTNode("Equal", ($1 ? $1->value : "0") + " == " + ($3 ? $3->value : "0")); 
+        $$->children.push_back($1);
+        $$->children.push_back($3);
+      }
+    | ADDRESS term
+      { 
+        $$ = new ASTNode("Address", "&" + ($2 ? $2->value : "unknown")); 
+        $$->children.push_back($2);
+      }
+    ;
+
+term
+    : IDENTIFIER { 
+        $$ = new ASTNode("Identifier", $1 ? *$1 : "unknown");
+        delete $1;
+      }
+    | NUMBER { 
+        $$ = new ASTNode("Number", $1 ? *$1 : "0");
+        delete $1;
+      }
+    | STRING { 
+        $$ = new ASTNode("String", $1 ? *$1 : "\"\"");
+        delete $1;
+      }
+    | LPAREN expression RPAREN { $$ = $2; }
+    | IDENTIFIER PLUSPLUS { 
+        $$ = new ASTNode("Increment", ($1 ? *$1 : "unknown") + "++");
+        $$->children.push_back(new ASTNode("Identifier", $1 ? *$1 : "unknown"));
+        delete $1;
       }
     ;
 %%
