@@ -1,4 +1,4 @@
-#include "semantic_analyzer.h"
+#include "../include/semantic_analyzer.h"
 #include <iostream>
 
 int main(int argc, char* argv[]) {
@@ -16,8 +16,8 @@ int main(int argc, char* argv[]) {
         }
         if (errors.empty()) {
             std::cout << "Semantic analysis passed." << std::endl;
-            analyzer.saveASTToFile("output.ast");
-            std::cout << "Annotated AST saved to output.ast" << std::endl;
+            analyzer.saveASTToFile("output2.ast");
+            std::cout << "Annotated AST saved to output2.ast" << std::endl;
         } else {
             std::cout << "Semantic analysis failed. No output file generated." << std::endl;
         }
