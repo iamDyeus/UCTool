@@ -2,34 +2,69 @@
 CC = g++
 FLEX = flex
 BISON = bison
-CFLAGS = -Iinclude -std=c++17 -DYY_NO_UNISTD_H
+CFLAGS = -I./src/include -std=c++17 -DYY_NO_UNISTD_H
 LDFLAGS = -lfl
 
-all: out/uctool
+# Directories
+SRC_DIR = src/executors
+INCLUDE_DIR = src/include
+BUILD_DIR = build
+OUT_DIR = out
+TEMP_DIR = tools-temp
 
-out/uctool: build/lex.yy.o build/lex-main.o build/parser.yy.o build/parser-main.o build/uctool-main.o
+# Output Files
+LEXER_C = $(TEMP_DIR)/lex.yy.c
+PARSER_C = $(TEMP_DIR)/parser.yy.c
+PARSER_H = $(TEMP_DIR)/parser.yy.h
+PARSER_OUTPUT = $(TEMP_DIR)/parser.yy.output
+
+# Object Files
+OBJS = $(BUILD_DIR)/lex.yy.o \
+       $(BUILD_DIR)/lex-main.o \
+       $(BUILD_DIR)/parser.yy.o \
+       $(BUILD_DIR)/parser-main.o \
+       $(BUILD_DIR)/uctool-main.o
+
+# Final Executable
+TARGET = $(OUT_DIR)/uctool
+
+all: directories $(TARGET)
+
+$(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-build/lex.yy.o: src/lex.yy.c include/lexer.h src/parser.yy.h
-	$(CC) $(CFLAGS) -c src/lex.yy.c -o $@
+# Ensure necessary directories exist
+directories:
+	@mkdir -p $(BUILD_DIR) $(OUT_DIR) $(TEMP_DIR)
 
-src/lex.yy.c: src/lexer.l include/lexer_utils.hpp src/parser.yy.h
-	$(FLEX) -o src/lex.yy.c src/lexer.l
+# Build Lexer
+$(BUILD_DIR)/lex.yy.o: $(LEXER_C) $(INCLUDE_DIR)/lexer.h $(PARSER_H)
+	$(CC) $(CFLAGS) -c $(LEXER_C) -o $@
 
-build/lex-main.o: src/lex-main.cpp include/lexer_utils.hpp include/lexer.h src/lex.yy.c
-	$(CC) $(CFLAGS) -c src/lex-main.cpp -o $@
+$(LEXER_C): $(SRC_DIR)/lexer.l $(INCLUDE_DIR)/lexer_utils.hpp $(PARSER_H)
+	$(FLEX) -o $@ $<
 
-build/parser.yy.o: src/parser.yy.c src/parser.yy.h include/lexer_utils.hpp include/parser_utils.hpp include/lexer.h
-	$(CC) $(CFLAGS) -c src/parser.yy.c -o $@
+# Build Lexer Main
+$(BUILD_DIR)/lex-main.o: $(SRC_DIR)/lex-main.cpp $(INCLUDE_DIR)/lexer_utils.hpp $(INCLUDE_DIR)/lexer.h $(LEXER_C)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-src/parser.yy.c src/parser.yy.h: src/parser.y include/lexer_utils.hpp include/parser_utils.hpp include/lexer.h
-	$(BISON) -d -o src/parser.yy.c src/parser.y
+# Build Parser
+$(BUILD_DIR)/parser.yy.o: $(PARSER_C) $(PARSER_H) $(INCLUDE_DIR)/parser_utils.hpp $(INCLUDE_DIR)/lexer_utils.hpp
+	$(CC) $(CFLAGS) -c $(PARSER_C) -o $@
 
-build/parser-main.o: src/parser-main.cpp include/parser_utils.hpp include/lexer_utils.hpp include/lexer.h src/parser.yy.h
-	$(CC) $(CFLAGS) -c src/parser-main.cpp -o $@
+$(PARSER_C) $(PARSER_H) $(PARSER_OUTPUT): $(SRC_DIR)/parser.y
+	$(BISON) -d -o $(PARSER_C) $<
 
-build/uctool-main.o: src/uctool-main.cpp
-	$(CC) $(CFLAGS) -c src/uctool-main.cpp -o $@
+# Build Parser Main
+$(BUILD_DIR)/parser-main.o: $(SRC_DIR)/parser-main.cpp $(INCLUDE_DIR)/parser_utils.hpp $(PARSER_H)
+	$(CC) $(CFLAGS) -c $< -o $@
 
+# Build UCTool Main
+$(BUILD_DIR)/uctool-main.o: src/cli/main.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Cleanup
 clean:
-	rm -f build/* src/lex.yy.c src/parser.yy.c src/parser.yy.h out/uctool
+	rm -rf $(BUILD_DIR)/* $(TEMP_DIR)/* $(OUT_DIR)/*
+
+.PHONY: all clean run directories
