@@ -25,7 +25,6 @@ void performParsing() {
     std::string line;
     std::string section;
     while (std::getline(infile, line)) {
-        // Remove trailing \r (for Windows compatibility)
         line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
 
         if (line.empty()) continue;
