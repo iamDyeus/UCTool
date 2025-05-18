@@ -1,3 +1,4 @@
+https://github.com/user-attachments/assets/7804beb7-45e4-4690-b540-24682ccacb97
 # UCTool - Unified Compiler Stage Tool
 
 A CLI tool to unify and streamline the execution of compiler stages (Flex, Bison, LLVM) with optional AI-powered explanations for each stage.
