@@ -1,5 +1,38 @@
-# ignoring .ast, .o, .vscode and .txt files
-*.ast
-*.txt
-.vscode
-src/semantic_analyzer.exe
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+#build and temp folders for temporary object and output files
+build/
+temp/
+tools-temp/
+out/
