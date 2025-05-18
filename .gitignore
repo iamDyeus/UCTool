@@ -36,3 +36,9 @@ build/
 temp/
 tools-temp/
 out/
+
+# envs
+env/
+.env
+.env.local
+.venv
