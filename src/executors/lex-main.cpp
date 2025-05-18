@@ -1,80 +1,92 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <iomanip>
+#include <sstream>
 #include "../include/lexer_utils.hpp"
 #include "../include/lexer.h"
 
 // Define line_num
 int line_num = 1;
 
-void performLexicalAnalysis(const char* filename) {
+void performLexicalAnalysis(const char* filename) {    
     // Ensure ../temp/ directory exists
     std::filesystem::create_directories("../temp");
     
-    // Debug: Print current working directory
-    std::cout << "Current working directory: " << std::filesystem::current_path() << "\n";
-    
-    // Debug: Verify file path
-    std::string outfile_path = "../temp/lex-tokens.txt";
-    std::cout << "Attempting to write to: " << std::filesystem::absolute(outfile_path) << "\n";
-    
     yyin = fopen(filename, "r");
     if (!yyin) {
-        std::cerr << "Could not open input file: " << filename << "\n";
+        std::cerr << "Error: Could not open input file: " << filename << "\n";
         return;
     }
 
     while (yylex() != 0) {} // Loop until EOF
     fclose(yyin);
 
-    std::ofstream outfile(outfile_path);
-    if (!outfile.is_open()) {
-        std::cerr << "Could not open " << outfile_path << " for writing\n";
+    // Check for unknown tokens
+    if (!unknown_tokens.empty()) {
+        for (const auto& token : unknown_tokens) {
+            std::cerr << "Error: Unknown tokens detected.";
+        }        
         return;
     }
 
-    outfile << "[Macros]\n";
-    for (const auto& macro : macros) {
-        outfile << macro.first << "|" << macro.second << "\n";
+    std::ofstream outfile("../temp/lex-tokens.txt");
+    if (!outfile.is_open()) {
+        std::cerr << "Error: Could not open ../temp/lex-tokens.txt for writing\n";
+        return;
     }
 
-    outfile << "[Included Files]\n";
-    for (const auto& file : included_files) {
-        outfile << file << "\n";
-    }
-
-    outfile << "[Recognized Tokens]\n";
+    // Write enhanced tabular format
+    outfile << "+----------------------+----------------------------------------+--------+--------+\n";
+    outfile << "| Token Type           | Value                                  | Line   | Col    |\n";
+    outfile << "+----------------------+----------------------------------------+--------+--------+\n";
     for (const auto& token : tokens) {
         std::string escaped_value = token.value;
+        // Escape special characters
         size_t pos = 0;
-        while ((pos = escaped_value.find("|", pos)) != std::string::npos) {
-            escaped_value.replace(pos, 1, "\\|");
+        while ((pos = escaped_value.find("\t", pos)) != std::string::npos) {
+            escaped_value.replace(pos, 1, "\\t");
             pos += 2;
         }
-        outfile << token.type << "|" << escaped_value << "|" << token.line_no << "|" << token.col_no << "\n";
-    }
-
-    outfile << "[Unknown Tokens]\n";
-    for (const auto& token : unknown_tokens) {
-        std::string escaped_value = token.value;
-        size_t pos = 0;
-        while ((pos = escaped_value.find("|", pos)) != std::string::npos) {
-            escaped_value.replace(pos, 1, "\\|");
+        pos = 0;
+        while ((pos = escaped_value.find("\n", pos)) != std::string::npos) {
+            escaped_value.replace(pos, 1, "\\n");
             pos += 2;
         }
-        outfile << escaped_value << "|" << token.line_no << "|" << token.col_no << "\n";
+        // Truncate value if too long
+        if (escaped_value.length() > 36) {
+            escaped_value = escaped_value.substr(0, 33) + "...";
+        }
+        outfile << "| " << std::left << std::setw(20) << token.type 
+                << " | " << std::left << std::setw(38) << escaped_value 
+                << " | " << std::right << std::setw(6) << token.line_no 
+                << " | " << std::right << std::setw(6) << token.col_no 
+                << " |\n";
     }
-
+    outfile << "+----------------------+----------------------------------------+--------+--------+\n";
     outfile.close();
 
-    std::cout << "\nRecognized Tokens:\n";
+    // Print only tabular output to terminal
+    std::cout << "+----------------------+----------------------------------------+--------+--------+\n";
+    std::cout << "| Token Type           | Value                                  | Line   | Col    |\n";
+    std::cout << "+----------------------+----------------------------------------+--------+--------+\n";
     for (const auto& token : tokens) {
-        std::cout << "Debug: Printing token: Type=" << token.type << ", Value=" << token.value << ", Line=" << token.line_no << ", Col=" << token.col_no << "\n";
-        std::cout << "Type: " << token.type << ", Value: " << token.value << ", Line: " << token.line_no << ", Col: " << token.col_no << "\n";
+        std::string display_value = token.value;
+        // Replace newlines with descriptive text for display
+        size_t pos = 0;
+        while ((pos = display_value.find("\n", pos)) != std::string::npos) {
+            display_value.replace(pos, 1, "(newline)");
+            pos += 9;
+        }
+        // Truncate value for display
+        if (display_value.length() > 36) {
+            display_value = display_value.substr(0, 33) + "...";
+        }
+        std::cout << "| " << std::left << std::setw(20) << token.type 
+                  << " | " << std::left << std::setw(38) << display_value 
+                  << " | " << std::right << std::setw(6) << token.line_no 
+                  << " | " << std::right << std::setw(6) << token.col_no 
+                  << " |\n";
     }
-    std::cout << "\nUnknown Tokens:\n";
-    for (const auto& token : unknown_tokens) {
-        std::cout << "Debug: Printing unknown token: Value=" << token.value << ", Line=" << token.line_no << ", Col=" << token.col_no << "\n";
-        std::cout << "Value: " << token.value << ", Line: " << token.line_no << ", Col: " << token.col_no << "\n";
-    }
+    std::cout << "+----------------------+----------------------------------------+--------+--------+\n";
 }
