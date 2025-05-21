@@ -3,7 +3,7 @@ CC = g++
 FLEX = flex
 BISON = bison
 CFLAGS = -I./src/include -std=c++17 -DYY_NO_UNISTD_H
-LDFLAGS = -lfl
+LDFLAGS = -lfl -ljsoncpp
 
 # Directories
 SRC_DIR = src/executors
@@ -19,11 +19,14 @@ PARSER_H = $(TEMP_DIR)/parser.yy.h
 PARSER_OUTPUT = $(TEMP_DIR)/parser.yy.output
 
 # Object Files
+AI_OBJS = src/ai/llm_explainer.o src/ai/gemini_client.o
+
 OBJS = $(BUILD_DIR)/lex.yy.o \
        $(BUILD_DIR)/lex-main.o \
        $(BUILD_DIR)/parser.yy.o \
        $(BUILD_DIR)/parser-main.o \
-       $(BUILD_DIR)/uctool-main.o
+       $(BUILD_DIR)/uctool-main.o \
+       $(AI_OBJS)
 
 # Final Executable
 TARGET = $(OUT_DIR)/uctool
@@ -62,6 +65,13 @@ $(BUILD_DIR)/parser-main.o: $(SRC_DIR)/parser-main.cpp $(INCLUDE_DIR)/parser_uti
 # Build UCTool Main
 $(BUILD_DIR)/uctool-main.o: src/cli/main.cpp
 	$(CC) $(CFLAGS) -c $< -o $@
+
+# Build AI Object Files
+src/ai/llm_explainer.o: src/ai/llm_explainer.cpp src/ai/llm_explainer.h src/ai/gemini_client.h
+	$(CC) $(CFLAGS) -c src/ai/llm_explainer.cpp -o src/ai/llm_explainer.o
+
+src/ai/gemini_client.o: src/ai/gemini_client.cpp src/ai/gemini_client.h
+	$(CC) $(CFLAGS) -c src/ai/gemini_client.cpp -o src/ai/gemini_client.o
 
 # Cleanup
 clean:
