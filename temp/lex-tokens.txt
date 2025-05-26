@@ -2,45 +2,33 @@
 | Token Type           | Value                                  | Line   | Col    |
 +----------------------+----------------------------------------+--------+--------+
 | Preprocessor         | #include <stdio.h>                     |      1 |     10 |
-| Keyword              | int                                    |      2 |      1 |
-| Identifier           | main                                   |      2 |      4 |
-| Punctuation          | (                                      |      2 |      8 |
-| Punctuation          | )                                      |      2 |      9 |
-| Punctuation          | {                                      |      2 |     10 |
-| Keyword              | int                                    |      3 |      1 |
-| Identifier           | a                                      |      3 |      4 |
-| Operator             | =                                      |      3 |      5 |
-| Int                  | 5                                      |      3 |      6 |
-| Punctuation          | ;                                      |      3 |      7 |
-| Keyword              | int                                    |      4 |      1 |
-| Identifier           | b                                      |      4 |      4 |
-| Operator             | =                                      |      4 |      5 |
-| Int                  | 10                                     |      4 |      6 |
-| Punctuation          | ;                                      |      4 |      8 |
-| Keyword              | int                                    |      5 |      1 |
-| Identifier           | temp                                   |      5 |      4 |
-| Operator             | =                                      |      5 |      8 |
-| Identifier           | a                                      |      5 |      9 |
-| Punctuation          | ;                                      |      5 |     10 |
-| Identifier           | a                                      |      6 |      1 |
-| Operator             | =                                      |      6 |      2 |
-| Identifier           | b                                      |      6 |      3 |
-| Punctuation          | ;                                      |      6 |      4 |
-| Identifier           | b                                      |      7 |      1 |
-| Operator             | =                                      |      7 |      2 |
-| Identifier           | temp                                   |      7 |      3 |
-| Punctuation          | ;                                      |      7 |      7 |
+| Keyword              | void                                   |      3 |      1 |
+| Identifier           | greet                                  |      3 |      5 |
+| Punctuation          | (                                      |      3 |     10 |
+| Punctuation          | )                                      |      3 |     11 |
+| Punctuation          | {                                      |      3 |     12 |
+| Identifier           | printf                                 |      4 |      1 |
+| Punctuation          | (                                      |      4 |      7 |
+| String               | "Hello, World! GREET\n"                |      4 |      8 |
+| Punctuation          | )                                      |      4 |     31 |
+| Punctuation          | ;                                      |      4 |     32 |
+| Punctuation          | }                                      |      5 |      1 |
+| Keyword              | int                                    |      7 |      1 |
+| Identifier           | main                                   |      7 |      4 |
+| Punctuation          | (                                      |      7 |      8 |
+| Punctuation          | )                                      |      7 |      9 |
+| Punctuation          | {                                      |      7 |     10 |
 | Identifier           | printf                                 |      8 |      1 |
 | Punctuation          | (                                      |      8 |      7 |
-| String               | "a: %d, b: %d\n"                       |      8 |      8 |
-| Punctuation          | ,                                      |      8 |     24 |
-| Identifier           | a                                      |      8 |     25 |
-| Punctuation          | ,                                      |      8 |     26 |
-| Identifier           | b                                      |      8 |     27 |
-| Punctuation          | )                                      |      8 |     28 |
-| Punctuation          | ;                                      |      8 |     29 |
-| Keyword              | return                                 |      9 |      1 |
-| Int                  | 0                                      |      9 |      7 |
+| String               | "Hi there from INT MAIN!\n"            |      8 |      8 |
+| Punctuation          | )                                      |      8 |     35 |
+| Punctuation          | ;                                      |      8 |     36 |
+| Identifier           | greet                                  |      9 |      1 |
+| Punctuation          | (                                      |      9 |      6 |
+| Punctuation          | )                                      |      9 |      7 |
 | Punctuation          | ;                                      |      9 |      8 |
-| Punctuation          | }                                      |     10 |      1 |
+| Keyword              | return                                 |     10 |      1 |
+| Int                  | 0                                      |     10 |      7 |
+| Punctuation          | ;                                      |     10 |      8 |
+| Punctuation          | }                                      |     11 |      1 |
 +----------------------+----------------------------------------+--------+--------+

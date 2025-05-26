@@ -1,21 +1,10 @@
 Program
+  Function: greet (void)
+    Call: "printf("Hello, World! GREET\n")"
+      String: "Hello, World! GREET\n"
   Function: main (int)
-    LocalDeclaration: int declarations
-      VarDecl: int a = 5
-        Number: 5
-    LocalDeclaration: int declarations
-      VarDecl: int b = 10
-        Number: 10
-    LocalDeclaration: int declarations
-      VarDecl: int temp = a
-        Identifier: a
-    Assignment: a = b
-      Identifier: b
-    Assignment: b = temp
-      Identifier: temp
-    Call: "printf("a: %d, b: %d\n", a, b)"
-      String: "a: %d, b: %d\n"
-      Identifier: a
-      Identifier: b
+    Call: "printf("Hi there from INT MAIN!\n")"
+      String: "Hi there from INT MAIN!\n"
+    Call: greet()
     Return: 0
       Number: 0

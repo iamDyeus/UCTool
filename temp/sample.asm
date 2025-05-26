@@ -1,50 +1,32 @@
 ; Target Code (x86 Assembly)
-; Generated on: Mon May 26 20:32:28 2025
+; Generated on: Mon May 26 20:37:44 2025
 ; ============================================================
 
 section .data
-str1: db ""a: %d, b: %d\n"", 0
+str1: db ""Hello, World! GREET\n"", 0
+str2: db ""Hi there from INT MAIN!\n"", 0
 
 section .text
 global _start
 
+func_greet:
     ; Load value
-    MOV r1, 5
-    ; Store value
-    MOV [a], r1
-    ; Load value
-    MOV r2, 10
-    ; Store value
-    MOV [b], r2
-    ; Store value
-    MOV [temp], a
-func_main:
-    ; Load value
-    MOV r1, 5
-    ; Store value
-    MOV [a], r1
-    ; Load value
-    MOV r2, 10
-    ; Store value
-    MOV [b], r2
-    ; Store value
-    MOV [temp], a
-    ; Load value
-    MOV r3, b
-    ; Store value
-    MOV [a], r3
-    ; Load value
-    MOV r4, temp
-    ; Store value
-    MOV [b], r4
-    ; Load value
-    MOV t1, ""a: %d, b: %d\n""
+    MOV r1, ""Hello, World! GREET\n""
     ; Call function
     CALL printf
+    ; End function
+    RET
+func_main:
     ; Load value
-    MOV t2, 0
+    MOV r1, ""Hi there from INT MAIN!\n""
+    ; Call function
+    CALL printf
+    ; Call function
+    CALL greet
+    ; Load value
+    MOV r2, 0
     ; Return
-    MOV RAX, t2
+    MOV RAX, r2
     RET
     ; End function
     RET
