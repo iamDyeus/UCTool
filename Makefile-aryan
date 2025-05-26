@@ -1,0 +1,48 @@
+# Compiler and flags
+CXX = g++
+CXXFLAGS = -std=c++17 -Wall -I src/include
+LDFLAGS =
+
+# Directories
+SRC_DIR = src/executors
+CLI_SRC_DIR = src/cli
+INCLUDE_DIR = src/include
+OUT_DIR = out
+TEMP_DIR = temp
+BUILD_DIR = build
+
+# Source files
+COMMON_SRCS = $(SRC_DIR)/AST.cpp $(SRC_DIR)/DAG.cpp $(SRC_DIR)/Parser.cpp $(SRC_DIR)/SymbolTable.cpp $(SRC_DIR)/TAC.cpp $(SRC_DIR)/SemanticAnalyzer.cpp $(SRC_DIR)/semantic_main.cpp $(SRC_DIR)/tac_main.cpp
+MAIN_SRC = $(CLI_SRC_DIR)/main.cpp
+
+# Object files (placed in build directory)
+COMMON_OBJS = $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(COMMON_SRCS))
+MAIN_OBJ = $(BUILD_DIR)/main.o
+
+# Executable
+EXEC = $(OUT_DIR)/uctool
+
+# Default target
+all: directories $(EXEC)
+
+# Create directories
+directories:
+	@mkdir -p $(OUT_DIR) $(TEMP_DIR) $(BUILD_DIR) $(CLI_SRC_DIR)
+
+# Link executable
+$(EXEC): $(COMMON_OBJS) $(MAIN_OBJ)
+	$(CXX) $(LDFLAGS) -o $@ $^
+
+# Compile source files to object files in build directory
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+# Compile main.cpp to object file in build directory
+$(BUILD_DIR)/main.o: $(CLI_SRC_DIR)/main.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+# Clean up
+clean:
+	rm -rf $(BUILD_DIR) $(OUT_DIR)
+
+.PHONY: all directories clean
