@@ -19,7 +19,7 @@ void performParsing() {
     // Read lex-tokens.txt
     std::ifstream infile("../temp/lex-tokens.txt");
     if (!infile.is_open()) {
-        std::cerr << "Error: Could not open ../temp/lex-tokens.txt for reading\n";
+        std::cerr << "Error: Could not open temp/lex-tokens.txt for reading\n";
         return;
     }
 
@@ -100,7 +100,7 @@ void performParsing() {
     if (yyparse() == 0 && parse_result != nullptr) {
         std::ofstream outfile("../temp/parser-output.ast");
         if (!outfile.is_open()) {
-            std::cerr << "Error: Could not open ../temp/parser-output.ast for writing\n";
+            std::cerr << "Error: Could not open temp/parser-output.ast for writing\n";
             return;
         }
         outfile << parse_result->to_string();

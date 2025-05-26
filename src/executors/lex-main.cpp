@@ -32,7 +32,7 @@ void performLexicalAnalysis(const char* filename) {
 
     std::ofstream outfile("../temp/lex-tokens.txt");
     if (!outfile.is_open()) {
-        std::cerr << "Error: Could not open ../temp/lex-tokens.txt for writing\n";
+        std::cerr << "Error: Could not open temp/lex-tokens.txt for writing\n";
         return;
     }
 
