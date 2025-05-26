@@ -1,28 +1,65 @@
-#include "TAC.h"
+#include "../include/TAC.h"
+#include <iostream>
+#include <iomanip>
 
-TACInstruction::TACInstruction(const std::string& l, const std::string& o, const std::string& a1, const std::string& a2, const std::string& r, int ln, bool reg)
-    : label(l), op(o), arg1(a1), arg2(a2), result(r), line(ln), isRegister(reg) {}
+TACGenerator::TACGenerator() : tempCounter(0), labelCounter(0) {}
 
-std::ostream& operator<<(std::ostream& os, const TACInstruction& inst) {
-    if (!inst.label.empty()) {
-        os << inst.label;
-    } else if (inst.op == "LOAD") {
-        os << "LOAD " << inst.arg1 << " -> " << inst.result;
-    } else if (inst.op == "STORE") {
-        os << "STORE " << inst.arg1 << " -> " << inst.result;
-    } else if (inst.op == "ADD" || inst.op == "SUB" || inst.op == "MUL" || inst.op == "DIV") {
-        os << inst.op << " " << inst.arg1 << ", " << inst.arg2 << " -> " << inst.result;
-    } else if (inst.op == "RET") {
-        os << "RET " << inst.arg1;
-    } else if (inst.op == "CALL") {
-        os << "CALL " << inst.arg1;
-        if (!inst.arg2.empty()) os << " with " << inst.arg2;
-    } else if (inst.op == "JMP") {
-        os << "JMP " << inst.result;
-    } else if (inst.op == "JZ") {
-        os << "JZ " << inst.arg1 << " -> " << inst.result;
-    } else {
-        os << inst.op << " " << inst.arg1 << ", " << inst.arg2 << " -> " << inst.result;
+std::string TACGenerator::newTemp() {
+    return "t" + std::to_string(++tempCounter);
+}
+
+std::string TACGenerator::newLabel() {
+    return "L" + std::to_string(++labelCounter);
+}
+
+void TACGenerator::addInstruction(std::string op, std::string arg1, std::string arg2, 
+                                std::string result, int line, std::string comment) {
+    // Create instruction with empty label by default
+    instructions.emplace_back("", op, arg1, arg2, result, line, comment);
+}
+
+const std::vector<TACInstruction>& TACGenerator::getInstructions() const {
+    return instructions;
+}
+
+void TACGenerator::printInstructions() const {
+    std::cout << "\nThree Address Code (TAC)\n";
+    std::cout << "Generated on: " << __DATE__ << " " << __TIME__ << "\n";
+    std::cout << std::string(80, '-') << "\n\n";
+
+    std::cout << std::left
+              << std::setw(20) << "Label"
+              << std::setw(12) << "Op"
+              << std::setw(20) << "Arg1"
+              << std::setw(12) << "Arg2"
+              << std::setw(12) << "Result"
+              << std::setw(10) << "Line"
+              << "\n";
+    std::cout << std::string(80, '-') << "\n";
+
+    for (const auto& inst : instructions) {
+        std::cout << std::left
+                  << std::setw(20) << inst.label
+                  << std::setw(12) << inst.op
+                  << std::setw(20) << inst.arg1
+                  << std::setw(12) << inst.arg2
+                  << std::setw(12) << inst.result
+                  << std::setw(10) << inst.line;
+        
+        if (!inst.comment.empty()) {
+            std::cout << "  ; " << inst.comment;
+        }
+        std::cout << "\n";
     }
-    return os;
+
+    std::cout << "\nTotal Instructions: " << instructions.size() << "\n";
+    std::cout << std::string(80, '-') << "\n";
+}
+
+void TACGenerator::optimizeCode() {
+    // Basic optimizations:
+    // 1. Remove redundant loads
+    // 2. Remove unused temporaries
+    // 3. Combine consecutive operations
+    // TODO: Implement optimizations
 }

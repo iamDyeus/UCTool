@@ -14,8 +14,6 @@ void runSemanticAnalysis(const char* filename) {
             for (const auto& issue : issues) {
                 std::cerr << issue.type << ": " << issue.description << " " << issue.status << "\n";
             }
-        } else {
-            std::cout << "Semantic analysis completed successfully.\n";
         }
     } catch (const std::exception& e) {
         std::cerr << "Error during semantic analysis: " << e.what() << "\n";

@@ -1,14 +1,18 @@
 #include "../include/SymbolTable.h"
-#include <fstream>
 #include <iostream>
 #include <iomanip>
+#include <ctime>
+#include <cstring>
 
-Symbol::Symbol() : type(""), scope(""), attributes(""), initialized(false), used(false), line(0) {
-    std::cerr << "Warning: Symbol default constructor used" << std::endl;
-}
+Symbol::Symbol() : initialized(false), used(false), line(0), isFunction(false) {}
 
 Symbol::Symbol(const std::string& t, const std::string& s, const std::string& a, int l)
-    : type(t), scope(s), attributes(a), initialized(true), used(false), line(l) {}
+    : type(t), scope(s), attributes(a), initialized(false), used(false), line(l), isFunction(false) {}
+
+Symbol::Symbol(const std::string& t, const std::string& s, const std::string& a, int l,
+               const std::vector<std::string>& params, const std::string& ret)
+    : type(t), scope(s), attributes(a), initialized(false), used(false), line(l),
+      paramTypes(params), returnType(ret), isFunction(true) {}
 
 TypeCheck::TypeCheck(const std::string& loc, const std::string& desc, const std::string& stat)
     : location(loc), description(desc), status(stat) {}
@@ -20,35 +24,50 @@ SemanticIssue::SemanticIssue(const std::string& t, const std::string& desc, cons
     : type(t), description(desc), status(stat) {}
 
 SymbolTable::SymbolTable() : hasStdioInclude(false) {
-    scopes.push_back({});
+    scopes.emplace_back(); // Global scope
     scopeNames.push_back("global");
-    scopeChecks.emplace_back("global", "Entered", 0);
 }
 
 void SymbolTable::enterScope(const std::string& scopeName) {
-    scopes.push_back({});
+    scopes.emplace_back();
     scopeNames.push_back(scopeName);
-    scopeChecks.emplace_back(scopeName, "Entered", scopes.back().size());
-    std::cerr << "Debug: Entered scope '" << scopeName << "', total scopes: " << scopes.size() << std::endl;
+    scopeChecks.emplace_back(scopeName, "Entered", 0);
 }
 
 void SymbolTable::exitScope() {
-    if (!scopes.empty()) {
-        scopeChecks.emplace_back(scopeNames.back(), "Exited", scopes.back().size());
-        std::cerr << "Debug: Exited scope '" << scopeNames.back() << "', total scopes: " << scopes.size() - 1 << std::endl;
+    if (scopes.size() > 1) {
+        int symbolCount = scopes.back().size();
+        scopeChecks.emplace_back(scopeNames.back(), "Exited", symbolCount);
         scopes.pop_back();
         scopeNames.pop_back();
     }
 }
 
 bool SymbolTable::declare(const std::string& name, const std::string& type, const std::string& attributes, int line) {
-    auto& currentScope = scopes.back();
-    if (currentScope.find(name) != currentScope.end()) {
-        issues.emplace_back("Error", "Redeclaration of variable '" + name + "' at line " + std::to_string(line), "❌");
+    if (scopes.back().find(name) != scopes.back().end()) {
+        issues.emplace_back("Error", "Redeclaration of '" + name + "' in scope '" + scopeNames.back() + "' at line " + std::to_string(line), "❌");
         return false;
     }
-    currentScope.emplace(name, Symbol(type, scopeNames.back(), attributes, line));
-    std::cerr << "Debug: Declared variable '" << name << "' with type '" << type << "' in scope '" << scopeNames.back() << "' at line " << line << std::endl;
+    
+    Symbol symbol(type, scopeNames.back(), attributes, line);
+    scopes.back()[name] = symbol;
+    
+    addTypeCheck(name, "Variable declaration of type " + type, "OK");
+    return true;
+}
+
+bool SymbolTable::declareWithInit(const std::string& name, const std::string& type, const std::string& value, int line) {
+    if (scopes.back().find(name) != scopes.back().end()) {
+        issues.emplace_back("Error", "Redeclaration of '" + name + "' in scope '" + scopeNames.back() + "' at line " + std::to_string(line), "❌");
+        return false;
+    }
+    
+    Symbol symbol(type, scopeNames.back(), "variable", line);
+    symbol.initialized = true;
+    symbol.initialValue = value;
+    scopes.back()[name] = symbol;
+    
+    addTypeCheck(name, "Variable declaration with initialization of type " + type, "OK");
     return true;
 }
 
@@ -57,8 +76,7 @@ bool SymbolTable::defineMacro(const std::string& name, const std::string& value,
         issues.emplace_back("Error", "Redefinition of macro '" + name + "' at line " + std::to_string(line), "❌");
         return false;
     }
-    macros.emplace(name, Symbol("int (macro)", "global", "preprocessor constant", line));
-    std::cerr << "Debug: Defined macro '" << name << "' with value '" << value << "' at line " << line << std::endl;
+    macros[name] = Symbol("macro", "global", value, line);
     return true;
 }
 
@@ -67,78 +85,99 @@ bool SymbolTable::defineStruct(const std::string& name, int line) {
         issues.emplace_back("Error", "Redefinition of struct '" + name + "' at line " + std::to_string(line), "❌");
         return false;
     }
-    structs.emplace(name, Symbol("struct {float x, float y}", "global", "user-defined type", line));
-    std::cerr << "Debug: Defined struct '" << name << "' at line " << line << std::endl;
+    structs[name] = Symbol("struct", "global", "", line);
     return true;
 }
 
-bool SymbolTable::defineFunction(const std::string& name, const std::string& type, int line) {
+bool SymbolTable::defineFunction(const std::string& name, const std::string& type,
+                               const std::vector<std::string>& params, int line) {
     if (functions.find(name) != functions.end()) {
-        issues.emplace_back("Error", "Redefinition of function '" + name + "' at line " + std::to_string(line), "❌");
+        addWarning("Redefinition of function '" + name + "'", line);
         return false;
     }
-    functions.emplace(name, Symbol(type + " func(void)", "global", "function", line));
-    std::cerr << "Debug: Defined function '" << name << "' with type '" << type << " func(void)' at line " << line << std::endl;
+
+    Symbol symbol(type, "global", "function", line, params, type);
+    functions[name] = symbol;
+
+    // Create scope for function parameters
+    enterScope(name);
+    for (size_t i = 0; i < params.size(); i += 2) {
+        if (i + 1 < params.size()) {
+            declare(params[i + 1], params[i], "parameter", line);
+        }
+    }
+
+    addTypeCheck(name, "Function definition with return type " + type, "OK");
     return true;
 }
 
 const Symbol* SymbolTable::lookup(const std::string& name, int line) const {
-    for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
-        auto findIt = it->find(name);
-        if (findIt != it->end()) {
-            std::cerr << "Debug: Lookup succeeded for identifier '" << name << "' at line " << line << ", type=" << findIt->second.type << std::endl;
-            return &(findIt->second);
+    // Check current scope and outer scopes
+    for (auto scope = scopes.rbegin(); scope != scopes.rend(); ++scope) {
+        auto it = scope->find(name);
+        if (it != scope->end()) {
+            return &(it->second);
         }
     }
-    auto macroIt = macros.find(name);
-    if (macroIt != macros.end()) {
-        return &(macroIt->second);
-    }
-    auto structIt = structs.find(name);
-    if (structIt != structs.end()) {
-        return &(structIt->second);
-    }
+    
+    // Check functions
     auto funcIt = functions.find(name);
     if (funcIt != functions.end()) {
         return &(funcIt->second);
     }
-    std::cerr << "Debug: Lookup failed for identifier '" << name << "' at line " << line << std::endl;
+    
+    // Check macros
+    auto macroIt = macros.find(name);
+    if (macroIt != macros.end()) {
+        return &(macroIt->second);
+    }
+    
+    // Check structs
+    auto structIt = structs.find(name);
+    if (structIt != structs.end()) {
+        return &(structIt->second);
+    }
+    
     return nullptr;
 }
 
 void SymbolTable::markUsed(const std::string& name) {
-    for (auto it = scopes.rbegin(); it != scopes.rend(); ++it) {
-        auto findIt = it->find(name);
-        if (findIt != it->end()) {
-            findIt->second.used = true;
+    // Check scopes
+    for (auto& scope : scopes) {
+        auto it = scope.find(name);
+        if (it != scope.end()) {
+            it->second.used = true;
             return;
         }
     }
-    auto macroIt = macros.find(name);
-    if (macroIt != macros.end()) {
-        macroIt->second.used = true;
-        return;
-    }
-    auto structIt = structs.find(name);
-    if (structIt != structs.end()) {
-        structIt->second.used = true;
-        return;
-    }
+    
+    // Check functions
     auto funcIt = functions.find(name);
     if (funcIt != functions.end()) {
         funcIt->second.used = true;
         return;
     }
+    
+    // Check macros
+    auto macroIt = macros.find(name);
+    if (macroIt != macros.end()) {
+        macroIt->second.used = true;
+        return;
+    }
 }
 
-void SymbolTable::setStdioInclude() { 
+void SymbolTable::setStdioInclude() {
     hasStdioInclude = true;
-    functions.emplace("printf", Symbol("void func(string)", "global", "function", 1));
 }
 
-bool SymbolTable::hasStdio() const { return hasStdioInclude; }
+bool SymbolTable::hasStdio() const {
+    return hasStdioInclude;
+}
 
-void SymbolTable::addTypeCheck(const std::string& location, const std::string& description, const std::string& status) const {
+void SymbolTable::addTypeCheck(const std::string& location, const std::string& description, const std::string& status) {
+    if (location.find("printf(") == 0 || location.find("scanf(") == 0 || location[0] == '"') {
+        return;
+    }
     typeChecks.emplace_back(location, description, status);
 }
 
@@ -147,200 +186,207 @@ void SymbolTable::addWarning(const std::string& description, int line) {
 }
 
 void SymbolTable::checkUnusedSymbols() {
-    for (auto& [name, symbol] : macros) {
-        if (!symbol.used) {
-            issues.emplace_back("Warning", "Unused macro '" + name + "' defined at line " + std::to_string(symbol.line), "⚠️");
-        }
-    }
-    for (auto& [name, symbol] : structs) {
-        if (!symbol.used) {
-            issues.emplace_back("Warning", "Unused struct '" + name + "' defined at line " + std::to_string(symbol.line), "⚠️");
-        }
-    }
-    for (auto& [name, symbol] : functions) {
-        if (!symbol.used && name != "main ") {
-            issues.emplace_back("Warning", "Unused function '" + name + "' defined at line " + std::to_string(symbol.line), "⚠️");
-        }
-    }
-    for (const auto& scope : scopes) {
-        for (const auto& [name, symbol] : scope) {
+    // Check variables in all scopes
+    for (size_t i = 0; i < scopes.size(); ++i) {
+        for (const auto& [name, symbol] : scopes[i]) {
             if (!symbol.used) {
-                issues.emplace_back("Warning", "Unused variable '" + name + "' in scope '" + symbol.scope + "' defined at line " + std::to_string(symbol.line), "⚠️");
+                issues.emplace_back(
+                    "Warning",
+                    "Variable '" + name + "' declared but not used in scope '" + 
+                    scopeNames[i] + "' at line " + std::to_string(symbol.line),
+                    "⚠️"
+                );
             }
         }
+    }
+
+    // Check functions
+    for (const auto& [name, symbol] : functions) {
+        if (!symbol.used && name != "main") {  // Ignore main function
+            issues.emplace_back(
+                "Warning",
+                "Function '" + name + "' declared but not used at line " + std::to_string(symbol.line),
+                "⚠️"
+            );
+        }
+    }
+}
+
+void SymbolTable::enterFunction(const std::string& name) {
+    currentFunction = name;
+    enterScope(name);
+}
+
+void SymbolTable::exitFunction() {
+    exitScope();
+    currentFunction.clear();
+}
+
+bool SymbolTable::hasOnlyWarnings() const {
+    return std::all_of(issues.begin(), issues.end(),
+        [](const SemanticIssue& issue) { return issue.type == "Warning"; });
+}
+
+void SymbolTable::validateDeclaration(const std::string& name, const std::string& type, int line) {
+    if (type.empty()) {
+        issues.emplace_back("Error", "Declaration of '" + name + "' has no type at line " + std::to_string(line), "❌");
     }
 }
 
 void SymbolTable::printSymbolTable() const {
-    std::ofstream outFile("../temp/symbol_table.txt");
-    if (!outFile.is_open()) {
-        std::cerr << "Error: Failed to open ../temp/symbol_table.txt for writing" << std::endl;
-        return;
-    }
+    std::time_t now = std::time(nullptr);
+    char timestamp[26];
+    ctime_r(&now, timestamp);
+    timestamp[strlen(timestamp) - 1] = '\0';
 
-    auto print = [&](std::ostream& os) {
-        os << "\nSymbol Table\n";
-        os << "============\n\n";
-        os << std::left
-           << std::setw(20) << "Name"
-           << std::setw(30) << "Type"
-           << std::setw(15) << "Scope"
-           << std::setw(25) << "Attributes"
-           << std::setw(12) << "Initialized"
-           << std::setw(10) << "Used"
-           << std::setw(8) << "Line" << "\n";
-        os << std::string(120, '-') << "\n";
-        for (const auto& [name, symbol] : macros) {
-            os << std::setw(20) << name
-               << std::setw(30) << symbol.type
-               << std::setw(15) << symbol.scope
-               << std::setw(25) << symbol.attributes
-               << std::setw(12) << (symbol.initialized ? "Yes" : "No")
-               << std::setw(10) << (symbol.used ? "Yes" : "No")
-               << std::setw(8) << symbol.line << "\n";
-        }
-        for (const auto& [name, symbol] : structs) {
-            os << std::setw(20) << name
-               << std::setw(30) << symbol.type
-               << std::setw(15) << symbol.scope
-               << std::setw(25) << symbol.attributes
-               << std::setw(12) << (symbol.initialized ? "Yes" : "No")
-               << std::setw(10) << (symbol.used ? "Yes" : "No")
-               << std::setw(8) << symbol.line << "\n";
-        }
-        for (const auto& [name, symbol] : functions) {
-            os << std::setw(20) << name
-               << std::setw(30) << symbol.type
-               << std::setw(15) << symbol.scope
-               << std::setw(25) << symbol.attributes
-               << std::setw(12) << (symbol.initialized ? "Yes" : "No")
-               << std::setw(10) << (symbol.used ? "Yes" : "No")
-               << std::setw(8) << symbol.line << "\n";
-        }
-        for (const auto& scope : scopes) {
-            for (const auto& [name, symbol] : scope) {
-                os << std::setw(20) << name
-                   << std::setw(30) << symbol.type
-                   << std::setw(15) << symbol.scope
-                   << std::setw(25) << symbol.attributes
-                   << std::setw(12) << (symbol.initialized ? "Yes" : "No")
-                   << std::setw(10) << (symbol.used ? "Yes" : "No")
-                   << std::setw(8) << symbol.line << "\n";
+    std::cout << "Symbol Table\n";
+    std::cout << "Generated on: " << timestamp << "\n";
+    std::cout << std::string(92, '=') << "\n\n";
+    
+    // Table header
+    std::cout << "╔═════════════════════╤══════════════════════╤═══════════════╤══════════════════╤════════════╤═══════╤═══════╗\n";
+    std::cout << "║ " << std::left << std::setw(20) << "Name"
+              << "│ " << std::setw(20) << "Type"
+              << "│ " << std::setw(14) << "Scope"
+              << "│ " << std::setw(17) << "Attributes"
+              << "│ " << std::setw(11) << "Initialized"
+              << "│ " << std::setw(6) << "Used"
+              << "│ " << std::setw(6) << "Line" << "║\n";
+    std::cout << "╠═════════════════════╪══════════════════════╪═══════════════╪══════════════════╪════════════╪═══════╪═══════╣\n";
+
+    // Print variables from all scopes
+    for (size_t i = 0; i < scopes.size(); ++i) {
+        for (const auto& [name, symbol] : scopes[i]) {
+            if (!symbol.isFunction) {  // Only print variables here
+                std::string name_trunc = name.length() > 19 ? name.substr(0, 16) + "..." : name;
+                std::string type_trunc = symbol.type.length() > 19 ? symbol.type.substr(0, 16) + "..." : symbol.type;
+                std::string scope_trunc = symbol.scope.length() > 13 ? symbol.scope.substr(0, 10) + "..." : symbol.scope;
+                std::string attr_trunc = symbol.attributes.length() > 16 ? symbol.attributes.substr(0, 13) + "..." : symbol.attributes;
+                
+                std::cout << "║ " << std::left << std::setw(20) << name_trunc
+                          << "│ " << std::setw(20) << type_trunc
+                          << "│ " << std::setw(14) << scope_trunc
+                          << "│ " << std::setw(17) << attr_trunc
+                          << "│ " << std::setw(11) << (symbol.initialized ? "Yes" : "No")
+                          << "│ " << std::setw(6) << (symbol.used ? "Yes" : "No")
+                          << "│ " << std::right << std::setw(6) << symbol.line << "║\n";
             }
         }
-        os << "\n";
-    };
+    }
 
-    print(std::cout);
-    print(outFile);
-    outFile.close();
+    // Print functions
+    for (const auto& [name, symbol] : functions) {
+        if (name == "printf" || name == "scanf") continue;  // Skip standard functions
+        
+        std::string name_trunc = name.length() > 19 ? name.substr(0, 16) + "..." : name;
+        std::string type_trunc = symbol.type.length() > 19 ? symbol.type.substr(0, 16) + "..." : symbol.type;
+        std::string scope_trunc = symbol.scope.length() > 13 ? symbol.scope.substr(0, 10) + "..." : symbol.scope;
+        std::string attr_trunc = symbol.attributes.length() > 16 ? symbol.attributes.substr(0, 13) + "..." : symbol.attributes;
+        
+        std::cout << "║ " << std::left << std::setw(20) << name_trunc
+                  << "│ " << std::setw(20) << type_trunc
+                  << "│ " << std::setw(14) << scope_trunc
+                  << "│ " << std::setw(17) << attr_trunc
+                  << "│ " << std::setw(11) << (symbol.initialized ? "Yes" : "No")
+                  << "│ " << std::setw(6) << (symbol.used ? "Yes" : "No")
+                  << "│ " << std::right << std::setw(6) << symbol.line << "║\n";
+    }
+
+    std::cout << "╚═════════════════════╧══════════════════════╧═══════════════╧══════════════════╧════════════╧═══════╧═══════╝\n";
+    std::cout << "\nTotal Symbols: " << (functions.size() + 
+        std::accumulate(scopes.begin(), scopes.end(), 0, 
+            [](int sum, const auto& scope) { return sum + scope.size(); })) << "\n";
+    std::cout << std::string(92, '=') << "\n\n";
 }
 
 void SymbolTable::printTypeChecks() const {
-    std::ofstream outFile("../temp/type_checks.txt");
-    if (!outFile.is_open()) {
-        std::cerr << "Error: Failed to open ../temp/type_checks.txt for writing" << std::endl;
-        return;
+    std::time_t now = std::time(nullptr);
+    char timestamp[26];
+    ctime_r(&now, timestamp);
+    timestamp[strlen(timestamp) - 1] = '\0';
+
+    std::cout << "Type Checking\n";
+    std::cout << "Generated on: " << timestamp << "\n";
+    std::cout << std::string(100, '=') << "\n\n";
+    std::cout << "+-------------------------------+-------------------------------------------------------------+-------------+\n";
+    std::cout << "| " << std::left << std::setw(30) << "Location"
+              << "| " << std::setw(60) << "Description"
+              << "| " << std::setw(12) << "Status" << "|\n";
+    std::cout << "+-------------------------------+-------------------------------------------------------------+-------------+\n";
+    for (const auto& check : typeChecks) {
+        std::string loc_trunc = check.location.length() > 29 ? check.location.substr(0, 26) + "..." : check.location;
+        std::string desc_trunc = check.description.length() > 59 ? check.description.substr(0, 56) + "..." : check.description;
+        std::cout << "| " << std::left << std::setw(30) << loc_trunc
+                  << "| " << std::setw(60) << desc_trunc
+                  << "| " << std::setw(12) << check.status << "|\n";
     }
-
-    auto print = [&](std::ostream& os) {
-        os << "\nType Checking\n";
-        os << "=============\n\n";
-        os << std::left
-           << std::setw(30) << "Location"
-           << std::setw(50) << "Description"
-           << std::setw(10) << "Status" << "\n";
-        os << std::string(90, '-') << "\n";
-        for (const auto& check : typeChecks) {
-            os << std::setw(30) << check.location
-               << std::setw(50) << check.description
-               << std::setw(10) << check.status << "\n";
-        }
-        os << "\n" << (typeChecks.empty() ? "No type checks performed." : "✅ All type checks passed.") << "\n\n";
-    };
-
-    print(std::cout);
-    print(outFile);
-    outFile.close();
+    std::cout << "+-------------------------------+-------------------------------------------------------------+-------------+\n";
+    std::cout << "\nTotal Type Checks: " << typeChecks.size() << "\n";
+    std::cout << "Status: " << (typeChecks.empty() ? "No checks performed" : "All passed") << "\n";
+    std::cout << std::string(100, '=') << "\n\n";
 }
 
 void SymbolTable::printScopeChecks() const {
-    std::ofstream outFile("../temp/scope_checks.txt");
-    if (!outFile.is_open()) {
-        std::cerr << "Error: Failed to open ../temp/scope_checks.txt for writing" << std::endl;
-        return;
+    std::time_t now = std::time(nullptr);
+    char timestamp[26];
+    ctime_r(&now, timestamp);
+    timestamp[strlen(timestamp) - 1] = '\0';
+
+    std::cout << "Scope Checking\n";
+    std::cout << "Generated on: " << timestamp << "\n";
+    std::cout << std::string(60, '=') << "\n\n";
+    std::cout << "+---------------------+-----------------+---------------+\n";
+    std::cout << "| " << std::left << std::setw(20) << "Scope"
+              << "| " << std::setw(16) << "Action"
+              << "| " << std::setw(14) << "Symbol Count" << "|\n";
+    std::cout << "+---------------------+-----------------+---------------+\n";
+    for (const auto& action : scopeChecks) {
+        std::string scope_trunc = action.scope.length() > 19 ? action.scope.substr(0, 16) + "..." : action.scope;
+        std::cout << "| " << std::left << std::setw(20) << scope_trunc
+                  << "| " << std::setw(16) << action.action
+                  << "| " << std::right << std::setw(14) << action.symbolCount << "|\n";
     }
-
-    auto print = [&](std::ostream& os) {
-        os << "\nScope Checking\n";
-        os << "==============\n\n";
-        os << std::left
-           << std::setw(20) << "Scope"
-           << std::setw(15) << "Action"
-           << std::setw(15) << "Symbol Count" << "\n";
-        os << std::string(50, '-') << "\n";
-        for (const auto& check : scopeChecks) {
-            os << std::setw(20) << check.scope
-               << std::setw(15) << check.action
-               << std::setw(15) << check.symbolCount << "\n";
-        }
-        os << "\n✅ All scopes properly managed.\n\n";
-    };
-
-    print(std::cout);
-    print(outFile);
-    outFile.close();
+    std::cout << "+---------------------+-----------------+---------------+\n";
+    std::cout << "\nTotal Scope Actions: " << scopeChecks.size() << "\n";
+    std::cout << "Status: All scopes properly managed\n";
+    std::cout << std::string(60, '=') << "\n\n";
 }
 
 void SymbolTable::printIssues() const {
-    std::ofstream outFile("../temp/semantic_issues.txt");
-    if (!outFile.is_open()) {
-        std::cerr << "Error: Failed to open ../temp/semantic_issues.txt for writing" << std::endl;
-        return;
-    }
+    std::time_t now = std::time(nullptr);
+    char timestamp[26];
+    ctime_r(&now, timestamp);
+    timestamp[strlen(timestamp) - 1] = '\0';
 
-    auto print = [&](std::ostream& os) {
-        os << "\nSemantic Errors/Warnings\n";
-        os << "========================\n\n";
-        os << std::left
-           << std::setw(10) << "Type"
-           << std::setw(60) << "Description"
-           << std::setw(10) << "Status" << "\n";
-        os << std::string(80, '-') << "\n";
-        bool hasErrors = false;
-        bool hasWarnings = false;
+    std::cout << "Semantic Errors/Warnings\n";
+    std::cout << "Generated on: " << timestamp << "\n";
+    std::cout << std::string(100, '=') << "\n\n";
+    std::cout << "+-------------+-------------------------------------------------------------+-------------+\n";
+    std::cout << "| " << std::left << std::setw(12) << "Type"
+              << "| " << std::setw(60) << "Description"
+              << "| " << std::setw(12) << "Status" << "|\n";
+    std::cout << "+-------------+-------------------------------------------------------------+-------------+\n";
+    if (issues.empty()) {
+        std::cout << "| " << std::left << std::setw(12) << "Error"
+                  << "| " << std::setw(60) << "No errors found"
+                  << "| " << std::setw(12) << "✅" << "|\n";
+        std::cout << "| " << std::left << std::setw(12) << "Warning"
+                  << "| " << std::setw(60) << "No warnings found"
+                  << "| " << std::setw(12) << "✅" << "|\n";
+    } else {
         for (const auto& issue : issues) {
-            os << std::setw(10) << issue.type
-               << std::setw(60) << issue.description
-               << std::setw(10) << issue.status << "\n";
-            if (issue.type == "Error") hasErrors = true;
-            if (issue.type == "Warning") hasWarnings = true;
+            std::string desc_trunc = issue.description.length() > 59 ? issue.description.substr(0, 56) + "..." : issue.description;
+            std::cout << "| " << std::left << std::setw(12) << issue.type
+                      << "| " << std::setw(60) << desc_trunc
+                      << "| " << std::setw(12) << issue.status << "|\n";
         }
-        if (!hasErrors && !hasWarnings) {
-            os << std::setw(10) << "Error"
-               << std::setw(60) << "No errors found"
-               << std::setw(10) << "✅" << "\n";
-            os << std::setw(10) << "Warning"
-               << std::setw(60) << "No warnings found"
-               << std::setw(10) << "✅" << "\n";
-        } else if (!hasErrors) {
-            os << std::setw(10) << "Error"
-               << std::setw(60) << "No errors found"
-               << std::setw(10) << "✅" << "\n";
-        }
-        os << "\n" << (hasErrors ? "❌ Semantic errors detected." : "✅ No major semantic errors detected.") << "\n\n";
-    };
-
-    print(std::cout);
-    print(outFile);
-    outFile.close();
+    }
+    std::cout << "+-------------+-------------------------------------------------------------+-------------+\n";
+    std::cout << "\nTotal Issues: " << issues.size() << "\n";
+    std::cout << "Status: " << (issues.empty() ? "No major semantic errors detected" : "Issues detected") << "\n";
+    std::cout << std::string(100, '=') << "\n\n";
 }
 
-const std::vector<SemanticIssue>& SymbolTable::getIssues() const { return issues; }
-
-bool SymbolTable::hasOnlyWarnings() const {
-    for (const auto& issue : issues) {
-        if (issue.type == "Error") return false;
-    }
-    return !issues.empty();
+const std::vector<SemanticIssue>& SymbolTable::getIssues() const {
+    return issues;
 }

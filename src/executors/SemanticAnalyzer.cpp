@@ -7,6 +7,8 @@
 #include <fstream>
 #include <algorithm>
 #include <iomanip>
+#include <ctime>
+#include <cstring>
 
 SemanticAnalyzer::SemanticAnalyzer(std::shared_ptr<ASTNode> a) : ast(a), tempCounter(1), labelCounter(1), dagNodeCounter(1), registerCounter(0) {
     registers = {"r1", "r2", "r3", "r4"};
@@ -105,19 +107,14 @@ void SemanticAnalyzer::analyzeNode(const std::shared_ptr<ASTNode>& node) {
         }
 
         case NodeType::Function: {
-            symbolTable.defineFunction(node->value, node->typeHint, node->line);
-            symbolTable.enterScope(node->value);
-            for (const auto& child : node->children) {
-                analyzeNode(child);
-            }
-            symbolTable.exitScope();
+            analyzeFunction(node);
             break;
         }
 
         case NodeType::Declarations: {
             for (const auto& child : node->children) {
                 if (child->type == NodeType::VarDecl) {
-                    symbolTable.declare(child->value, child->typeHint, "local variable", child->line);
+                    analyzeVarDecl(child);
                 } else {
                     issues.emplace_back("Error", "Invalid child node in Declarations at line " + std::to_string(child->line), "❌");
                 }
@@ -126,33 +123,18 @@ void SemanticAnalyzer::analyzeNode(const std::shared_ptr<ASTNode>& node) {
         }
 
         case NodeType::LocalDeclaration: {
-            // Handle legacy LocalDeclaration (without Declarations node)
-            if (!node->children.empty()) {
-                std::string initType = getExpressionType(node->children[0]);
-                if (initType == node->typeHint || (initType == "int" && node->typeHint == "float")) {
-                    symbolTable.addTypeCheck(
-                        node->value + " = " + node->children[0]->value,
-                        "Assigning " + initType + " to " + node->typeHint + " variable",
-                        "OK"
-                    );
-                } else {
-                    issues.emplace_back(
-                        "Error",
-                        "Initializer type mismatch for '" + node->value + "' at line " + std::to_string(node->line) +
-                        ". Expected " + node->typeHint + ", got " + initType,
-                        "❌"
-                    );
+            if (node->value == "declarations") {
+                for (const auto& child : node->children) {
+                    analyzeNode(child);
                 }
-            }
-            symbolTable.declare(node->value, node->typeHint, "local variable", node->line);
-            if (!node->children.empty()) {
-                symbolTable.markUsed(node->value);
+            } else {
+                analyzeNode(node);
             }
             break;
         }
 
         case NodeType::VarDecl: {
-            symbolTable.declare(node->value, node->typeHint, "local variable", node->line);
+            analyzeVarDecl(node);
             break;
         }
 
@@ -186,23 +168,7 @@ void SemanticAnalyzer::analyzeNode(const std::shared_ptr<ASTNode>& node) {
         }
 
         case NodeType::While: {
-            std::string condType = getExpressionType(node->children[0]);
-            if (condType == "bool") {
-                symbolTable.addTypeCheck(
-                    "while " + node->value,
-                    "Condition evaluates to bool",
-                    "OK"
-                );
-            } else {
-                issues.emplace_back(
-                    "Error",
-                    "While condition must be boolean at line " + std::to_string(node->line) + ". Got " + condType,
-                    "❌"
-                );
-            }
-            for (size_t i = 1; i < node->children.size(); ++i) {
-                analyzeNode(node->children[i]);
-            }
+            analyzeForLoop(node);
             break;
         }
 
@@ -306,8 +272,8 @@ void SemanticAnalyzer::analyzeNode(const std::shared_ptr<ASTNode>& node) {
                     "OK"
                 );
             }
-            analyzeNode(node->children[0]); // Then branch
-            analyzeNode(node->children[1]); // Else branch
+            analyzeNode(node->children[0]);
+            analyzeNode(node->children[1]);
             break;
         }
 
@@ -316,7 +282,7 @@ void SemanticAnalyzer::analyzeNode(const std::shared_ptr<ASTNode>& node) {
             if (returnType == node->typeHint || (returnType == "int" && node->typeHint == "float")) {
                 symbolTable.addTypeCheck(
                     "return " + node->children[0]->value,
-                    "Returning " + returnType + " from function",
+                    "Returning " + returnType + " from function expecting " + node->typeHint,
                     "OK"
                 );
             } else {
@@ -386,6 +352,11 @@ void SemanticAnalyzer::analyzeNode(const std::shared_ptr<ASTNode>& node) {
             } else {
                 symbolTable.markUsed(node->value);
                 node->cachedType = symbol->type;
+                symbolTable.addTypeCheck(
+                    node->value,
+                    "Using variable '" + node->value + "' of type " + symbol->type,
+                    "OK"
+                );
             }
             break;
         }
@@ -417,6 +388,11 @@ std::string SemanticAnalyzer::getExpressionType(const std::shared_ptr<ASTNode>& 
             } else {
                 result = symbol->type;
                 node->cachedType = result;
+                symbolTable.addTypeCheck(
+                    node->value,
+                    "Expression uses variable '" + node->value + "' of type " + result,
+                    "OK"
+                );
             }
             break;
         }
@@ -429,6 +405,12 @@ std::string SemanticAnalyzer::getExpressionType(const std::shared_ptr<ASTNode>& 
                 } else {
                     result = "int";
                 }
+                node->cachedType = result;
+                symbolTable.addTypeCheck(
+                    node->value,
+                    "Number literal '" + node->value + "' of type " + result,
+                    "OK"
+                );
             } catch (...) {
                 issues.emplace_back(
                     "Error",
@@ -441,6 +423,12 @@ std::string SemanticAnalyzer::getExpressionType(const std::shared_ptr<ASTNode>& 
         }
         case NodeType::String:
             result = "string";
+            node->cachedType = result;
+            symbolTable.addTypeCheck(
+                node->value,
+                "String literal of type " + result,
+                "OK"
+            );
             break;
         case NodeType::Address: {
             std::string baseType = getExpressionType(node->children[0]);
@@ -453,7 +441,13 @@ std::string SemanticAnalyzer::getExpressionType(const std::shared_ptr<ASTNode>& 
                 result = "unknown*";
             } else {
                 result = baseType + "*";
+                symbolTable.addTypeCheck(
+                    "&" + node->children[0]->value,
+                    "Address-of operation yielding " + result,
+                    "OK"
+                );
             }
+            node->cachedType = result;
             break;
         }
         case NodeType::Modulo: {
@@ -474,6 +468,7 @@ std::string SemanticAnalyzer::getExpressionType(const std::shared_ptr<ASTNode>& 
                 );
                 result = "unknown";
             }
+            node->cachedType = result;
             break;
         }
         case NodeType::Equal: {
@@ -484,18 +479,19 @@ std::string SemanticAnalyzer::getExpressionType(const std::shared_ptr<ASTNode>& 
                 (leftType == "float" && rightType == "int")) {
                 symbolTable.addTypeCheck(
                     node->value,
-                    "Equality comparison with compatible types",
+                    "Equality comparison with compatible types (" + leftType + ", " + rightType + ")",
                     "OK"
                 );
                 result = "bool";
             } else {
                 issues.emplace_back(
                     "Error",
-                    "Type mismatch in comparison at line " + std::to_string(node->line),
+                    "Type mismatch in comparison at line " + std::to_string(node->line) + ". Got " + leftType + " and " + rightType,
                     "❌"
                 );
                 result = "unknown";
             }
+            node->cachedType = result;
             break;
         }
         case NodeType::Add: {
@@ -508,17 +504,18 @@ std::string SemanticAnalyzer::getExpressionType(const std::shared_ptr<ASTNode>& 
                 result = (leftType == "float" || rightType == "float") ? "float" : "int";
                 symbolTable.addTypeCheck(
                     node->value,
-                    "Addition with compatible operands",
+                    "Addition with compatible operands (" + leftType + ", " + rightType + ") yielding " + result,
                     "OK"
                 );
             } else {
                 issues.emplace_back(
                     "Error",
-                    "Addition requires int or float operands at line " + std::to_string(node->line),
+                    "Addition requires int or float operands at line " + std::to_string(node->line) + ". Got " + leftType + " and " + rightType,
                     "❌"
                 );
                 result = "unknown";
             }
+            node->cachedType = result;
             break;
         }
         case NodeType::Less: {
@@ -530,22 +527,24 @@ std::string SemanticAnalyzer::getExpressionType(const std::shared_ptr<ASTNode>& 
                 (leftType == "float" && rightType == "int")) {
                 symbolTable.addTypeCheck(
                     node->value,
-                    "Less-than comparison with compatible operands",
+                    "Less-than comparison with compatible operands (" + leftType + ", " + rightType + ")",
                     "OK"
                 );
                 result = "bool";
             } else {
                 issues.emplace_back(
                     "Error",
-                    "Less-than comparison requires int or float operands at line " + std::to_string(node->line),
+                    "Less-than comparison requires int or float operands at line " + std::to_string(node->line) + ". Got " + leftType + " and " + rightType,
                     "❌"
                 );
                 result = "unknown";
             }
+            node->cachedType = result;
             break;
         }
         case NodeType::Increment:
             result = getExpressionType(node->children[0]);
+            node->cachedType = result;
             break;
         default:
             issues.emplace_back(
@@ -554,9 +553,9 @@ std::string SemanticAnalyzer::getExpressionType(const std::shared_ptr<ASTNode>& 
                 "❌"
             );
             result = "unknown";
+            node->cachedType = result;
             break;
     }
-    node->cachedType = result;
     return result;
 }
 
@@ -565,27 +564,22 @@ std::string SemanticAnalyzer::generateExpressionTAC(const std::shared_ptr<ASTNod
         case NodeType::Identifier: {
             if (!node->cachedType.empty()) {
                 std::string reg = allocateRegister();
-                tacInstructions.emplace_back("", "LOAD", node->value, "", reg, node->line, true);
+                tacInstructions.emplace_back("", "LOAD", node->value, "", reg, node->line);
                 return reg;
             }
-            issues.emplace_back(
-                "Error",
-                "Identifier '" + node->value + "' has no cached type at line " + std::to_string(node->line),
-                "❌"
-            );
             return node->value;
         }
         case NodeType::Number:
         case NodeType::String: {
             std::string reg = allocateRegister();
             std::string value = (node->type == NodeType::String) ? "\"" + node->value + "\"" : node->value;
-            tacInstructions.emplace_back("", "LOAD", value, "", reg, node->line, true);
+            tacInstructions.emplace_back("", "LOAD", value, "", reg, node->line);
             return reg;
         }
         case NodeType::Address: {
             std::string reg = allocateRegister();
             std::string value = "&" + node->children[0]->value;
-            tacInstructions.emplace_back("", "LOAD", value, "", reg, node->line, true);
+            tacInstructions.emplace_back("", "LOAD", value, "", reg, node->line);
             return reg;
         }
         case NodeType::Modulo: {
@@ -598,7 +592,7 @@ std::string SemanticAnalyzer::generateExpressionTAC(const std::shared_ptr<ASTNod
             std::string resultReg = allocateRegister();
             auto dagNode = createDAGNode("MOD", "", {left, right}, node->line);
             dagNode->result = resultReg;
-            tacInstructions.emplace_back("", "MOD", left, right, resultReg, node->line, true);
+            tacInstructions.emplace_back("", "MOD", left, right, resultReg, node->line);
             freeRegister(left);
             freeRegister(right);
             return resultReg;
@@ -613,7 +607,7 @@ std::string SemanticAnalyzer::generateExpressionTAC(const std::shared_ptr<ASTNod
             std::string resultReg = allocateRegister();
             auto dagNode = createDAGNode("EQ", "", {left, right}, node->line);
             dagNode->result = resultReg;
-            tacInstructions.emplace_back("", "EQ", left, right, resultReg, node->line, true);
+            tacInstructions.emplace_back("", "EQ", left, right, resultReg, node->line);
             freeRegister(left);
             freeRegister(right);
             return resultReg;
@@ -628,7 +622,7 @@ std::string SemanticAnalyzer::generateExpressionTAC(const std::shared_ptr<ASTNod
             std::string resultReg = allocateRegister();
             auto dagNode = createDAGNode("ADD", "", {left, right}, node->line);
             dagNode->result = resultReg;
-            tacInstructions.emplace_back("", "ADD", left, right, resultReg, node->line, true);
+            tacInstructions.emplace_back("", "ADD", left, right, resultReg, node->line);
             freeRegister(left);
             freeRegister(right);
             return resultReg;
@@ -643,7 +637,7 @@ std::string SemanticAnalyzer::generateExpressionTAC(const std::shared_ptr<ASTNod
             std::string resultReg = allocateRegister();
             auto dagNode = createDAGNode("LT", "", {left, right}, node->line);
             dagNode->result = resultReg;
-            tacInstructions.emplace_back("", "LT", left, right, resultReg, node->line, true);
+            tacInstructions.emplace_back("", "LT", left, right, resultReg, node->line);
             freeRegister(left);
             freeRegister(right);
             return resultReg;
@@ -678,35 +672,17 @@ void SemanticAnalyzer::generateTAC(const std::shared_ptr<ASTNode>& node) {
             break;
         }
 
-        case NodeType::Declarations: {
-            for (const auto& child : node->children) {
-                if (child->type == NodeType::VarDecl) {
-                    // No TAC generated for variable declarations without initializers
-                } else {
-                    issues.emplace_back("Error", "Invalid child node in Declarations at line " + std::to_string(child->line), "❌");
-                }
-            }
-            break;
-        }
-
-        case NodeType::LocalDeclaration: {
+        case NodeType::VarDecl: {
             if (!node->children.empty()) {
                 std::string value = generateExpressionTAC(node->children[0]);
                 tacInstructions.emplace_back("", "STORE", value, "", node->value, node->line);
-                freeRegister(value);
             }
-            break;
-        }
-
-        case NodeType::VarDecl: {
-            // No TAC generated for variable declarations without initializers
             break;
         }
 
         case NodeType::Assignment: {
             std::string value = generateExpressionTAC(node->children[0]);
             tacInstructions.emplace_back("", "STORE", value, "", node->value, node->line);
-            freeRegister(value);
             break;
         }
 
@@ -715,8 +691,7 @@ void SemanticAnalyzer::generateTAC(const std::shared_ptr<ASTNode>& node) {
             std::string endLabel = newLabel();
             tacInstructions.emplace_back(startLabel + ":", "", "", "", "", node->line);
             std::string cond = generateExpressionTAC(node->children[0]);
-            tacInstructions.emplace_back("", "JZ", cond, "", endLabel, node->children[0]->line);
-            freeRegister(cond);
+            tacInstructions.emplace_back("", "JZ", cond, "", endLabel, node->line);
             for (size_t i = 1; i < node->children.size(); ++i) {
                 generateTAC(node->children[i]);
             }
@@ -740,26 +715,14 @@ void SemanticAnalyzer::generateTAC(const std::shared_ptr<ASTNode>& node) {
                 }
             }
             tacInstructions.emplace_back("", "CALL", funcName, args, "", node->line);
-            for (const auto& reg : argRegs) {
-                freeRegister(reg);
-            }
             break;
         }
 
         case NodeType::IfElse: {
-            if (node->children.size() != 3) {
-                issues.emplace_back(
-                    "Error",
-                    "IfElse node must have exactly 3 children at line " + std::to_string(node->line),
-                    "❌"
-                );
-                return;
-            }
             std::string elseLabel = newLabel();
             std::string endLabel = newLabel();
             std::string cond = generateExpressionTAC(node->children[2]);
-            tacInstructions.emplace_back("", "JZ", cond, "", elseLabel, node->children[2]->line);
-            freeRegister(cond);
+            tacInstructions.emplace_back("", "JZ", cond, "", elseLabel, node->line);
             generateTAC(node->children[0]);
             tacInstructions.emplace_back("", "JMP", "", "", endLabel, node->line);
             tacInstructions.emplace_back(elseLabel + ":", "", "", "", "", node->line);
@@ -768,20 +731,9 @@ void SemanticAnalyzer::generateTAC(const std::shared_ptr<ASTNode>& node) {
             break;
         }
 
-        case NodeType::Increment: {
-            std::string var = generateExpressionTAC(node->children[0]);
-            std::string temp = allocateRegister();
-            tacInstructions.emplace_back("", "ADD", var, "1", temp, node->line, true);
-            tacInstructions.emplace_back("", "STORE", temp, "", node->children[0]->value, node->line);
-            freeRegister(var);
-            freeRegister(temp);
-            break;
-        }
-
         case NodeType::Return: {
             std::string value = generateExpressionTAC(node->children[0]);
             tacInstructions.emplace_back("", "RET", value, "", "", node->line);
-            freeRegister(value);
             break;
         }
 
@@ -796,36 +748,182 @@ void SemanticAnalyzer::generateTAC(const std::shared_ptr<ASTNode>& node) {
 void SemanticAnalyzer::printTAC() const {
     std::ofstream tacFile("../temp/sample.tac");
     if (!tacFile.is_open()) {
-        std::cerr << "Error: Failed to open ../temp/sample.tac for writing" << std::endl;
+        std::cerr << "Error: Failed to open ../temp/sample.tac: " << strerror(errno) << std::endl;
         return;
     }
 
-    tacFile << "Three Address Code for sample.ast\n";
-    tacFile << "=================================\n\n";
-    tacFile << "Instructions\n";
-    tacFile << "------------\n\n";
-    tacFile << std::left
-            << std::setw(15) << "Label"
-            << std::setw(11) << "Operation"
-            << std::setw(24) << "Arg1"
-            << std::setw(12) << "Arg2"
-            << std::setw(12) << "Result"
-            << std::setw(12) << "Source Line" << "\n";
-    tacFile << std::string(80, '-') << "\n";
+    std::time_t now = std::time(nullptr);
+    char timestamp[26];
+    ctime_r(&now, timestamp);
+    timestamp[strlen(timestamp) - 1] = '\0';
 
-    for (const auto& inst : tacInstructions) {
-        tacFile << std::setw(15) << inst.label
-                << std::setw(11) << inst.op
-                << std::setw(24) << inst.arg1
-                << std::setw(12) << inst.arg2
-                << std::setw(12) << inst.result
-                << std::setw(12) << inst.line << "\n";
+    auto print = [&](std::ostream& os) {
+        os << "\n╔══════════════════════════════════════════════════════════════════════════════════════════════════════╗\n";
+        os << "║                                       Three Address Code (TAC)                                        ║\n";
+        os << "║                              Generated on: " << std::left << std::setw(40) << timestamp << "║\n";
+        os << "╠══════════════════════════════════════════════════════════════════════════════════════════════════════╣\n\n";
+
+        // Column headers with better spacing
+        os << "╔═══════════════════════╤═══════════════╤═══════════════════════╤═══════════════╤═══════════════╤═════════╗\n";
+        os << "║ " << std::left << std::setw(20) << "Label"
+           << "│ " << std::setw(14) << "Operation"
+           << "│ " << std::setw(20) << "Argument 1"
+           << "│ " << std::setw(14) << "Argument 2"
+           << "│ " << std::setw(14) << "Result"
+           << "│ " << std::setw(8) << "Line" << "║\n";
+        os << "╠═══════════════════════╪═══════════════╪═══════════════════════╪═══════════════╪═══════════════╪═════════╣\n";
+
+        // Print instructions with improved formatting
+        for (const auto& inst : tacInstructions) {
+            std::string label_trunc = inst.label.length() > 19 ? inst.label.substr(0, 16) + "..." : inst.label;
+            std::string op_trunc = inst.op.length() > 13 ? inst.op.substr(0, 10) + "..." : inst.op;
+            std::string arg1_trunc = inst.arg1.length() > 19 ? inst.arg1.substr(0, 16) + "..." : inst.arg1;
+            std::string arg2_trunc = inst.arg2.length() > 13 ? inst.arg2.substr(0, 10) + "..." : inst.arg2;
+            std::string result_trunc = inst.result.length() > 13 ? inst.result.substr(0, 10) + "..." : inst.result;
+
+            os << "║ " << std::left << std::setw(20) << label_trunc
+               << "│ " << std::setw(14) << op_trunc
+               << "│ " << std::setw(20) << arg1_trunc
+               << "│ " << std::setw(14) << arg2_trunc
+               << "│ " << std::setw(14) << result_trunc
+               << "│ " << std::right << std::setw(8) << inst.line << " ║\n";
+
+            // Add separator after function labels for better readability
+            if (!inst.label.empty() && inst.label.find("func_") != std::string::npos) {
+                os << "╟───────────────────────┼───────────────┼───────────────────────┼───────────────┼───────────────┼─────────╢\n";
+            }
+        }
+        os << "╚═══════════════════════╧═══════════════╧═══════════════════════╧═══════════════╧═══════════════╧═════════╝\n\n";
+
+        // Summary section
+        os << "╔══════════════════════════════════════════════════════════════════════════════════════════════════════╗\n";
+        os << "║ Summary                                                                                               ║\n";
+        os << "╟──────────────────────────────────────────────────────────────────────────────────────────────────────╢\n";
+        os << "║ Total Instructions: " << std::left << std::setw(71) << tacInstructions.size() << "║\n";
+        os << "║ Status: " << std::left << std::setw(82) << "Generation completed successfully" << "║\n";
+        os << "╚══════════════════════════════════════════════════════════════════════════════════════════════════════╝\n\n";
+    };
+
+    print(std::cout);
+    print(tacFile);
+    tacFile.close();
+}
+
+void SemanticAnalyzer::generateTargetCode() {
+    std::ofstream asmFile("../temp/sample.asm");
+    if (!asmFile.is_open()) {
+        std::cerr << "Error: Failed to open ../temp/sample.asm: " << strerror(errno) << std::endl;
+        return;
     }
 
-    tacFile << std::string(80, '-') << "\n";
-    tacFile << "\n=================================\n";
-    tacFile << "TAC generation with registers completed.\n";
-    tacFile.close();
+    std::time_t now = std::time(nullptr);
+    char timestamp[26];
+    ctime_r(&now, timestamp);
+    timestamp[strlen(timestamp) - 1] = '\0';
+
+    auto print = [&](std::ostream& os) {
+        os << "; Target Code (x86 Assembly)\n";
+        os << "; Generated on: " << timestamp << "\n";
+        os << "; " << std::string(60, '=') << "\n\n";
+        os << "section .data\n";
+        std::vector<std::string> strings;
+        int strCounter = 1;
+        for (const auto& inst : tacInstructions) {
+            if (inst.op == "LOAD" && inst.arg1[0] == '"') {
+                std::string str = inst.arg1;
+                strings.push_back(str);
+                os << "str" << strCounter++ << ": db " << str << ", 0\n";
+            }
+        }
+        os << "\nsection .text\n";
+        os << "global _start\n";
+        if (symbolTable.hasStdio()) {
+            os << "extern printf\n";
+            os << "extern scanf\n";
+        }
+        os << "\n";
+
+        for (const auto& inst : tacInstructions) {
+            if (!inst.label.empty()) {
+                os << inst.label << "\n";
+            } else if (inst.op == "LOAD") {
+                os << "    ; Load value\n";
+                os << "    MOV " << inst.result << ", " << inst.arg1 << "\n";
+            } else if (inst.op == "STORE") {
+                os << "    ; Store value\n";
+                os << "    MOV [" << inst.result << "], " << inst.arg1 << "\n";
+            } else if (inst.op == "ADD") {
+                os << "    ; Add operation\n";
+                os << "    MOV RAX, " << inst.arg1 << "\n";
+                os << "    ADD RAX, " << inst.arg2 << "\n";
+                os << "    MOV " << inst.result << ", RAX\n";
+            } else if (inst.op == "MOD") {
+                os << "    ; Modulo operation\n";
+                os << "    MOV RAX, " << inst.arg1 << "\n";
+                os << "    XOR RDX, RDX\n";
+                os << "    DIV " << inst.arg2 << "\n";
+                os << "    MOV " << inst.result << ", RDX\n";
+            } else if (inst.op == "EQ") {
+                os << "    ; Equality comparison\n";
+                os << "    MOV RAX, " << inst.arg1 << "\n";
+                os << "    CMP RAX, " << inst.arg2 << "\n";
+                os << "    SETE AL\n";
+                os << "    MOVZX " << inst.result << ", AL\n";
+            } else if (inst.op == "LT") {
+                os << "    ; Less-than comparison\n";
+                os << "    MOV RAX, " << inst.arg1 << "\n";
+                os << "    CMP RAX, " << inst.arg2 << "\n";
+                os << "    SETL AL\n";
+                os << "    MOVZX " << inst.result << ", AL\n";
+            } else if (inst.op == "CALL") {
+                os << "    ; Call function\n";
+                if (inst.arg1 == "printf") {
+                    size_t strIndex = 0;
+                    for (size_t i = 0; i < strings.size(); ++i) {
+                        if (inst.arg2.find(strings[i]) != std::string::npos) {
+                            strIndex = i + 1;
+                            break;
+                        }
+                    }
+                    if (strIndex > 0) {
+                        os << "    PUSH str" << strIndex << "\n";
+                        os << "    CALL printf\n";
+                        os << "    ADD RSP, 8\n";
+                    } else {
+                        os << "    CALL " << inst.arg1 << "\n";
+                    }
+                } else {
+                    os << "    CALL " << inst.arg1 << "\n";
+                }
+            } else if (inst.op == "JMP") {
+                os << "    ; Jump\n";
+                os << "    JMP " << inst.result << "\n";
+            } else if (inst.op == "JZ") {
+                os << "    ; Jump if zero\n";
+                os << "    CMP " << inst.arg1 << ", 0\n";
+                os << "    JE " << inst.result << "\n";
+            } else if (inst.op == "RET") {
+                os << "    ; Return\n";
+                os << "    MOV RAX, " << inst.arg1 << "\n";
+                os << "    RET\n";
+            } else if (inst.op == "END") {
+                os << "    ; End function\n";
+                os << "    RET\n";
+            }
+        }
+
+        os << "\n_start:\n";
+        os << "    ; Program entry point\n";
+        os << "    CALL func_main\n";
+        os << "    MOV RAX, 60\n";
+        os << "    XOR RDI, RDI\n";
+        os << "    SYSCALL\n";
+        os << "; " << std::string(60, '=') << "\n";
+    };
+
+    print(std::cout);
+    print(asmFile);
+    asmFile.close();
 }
 
 void SemanticAnalyzer::printAST(const std::shared_ptr<ASTNode>& node, std::ofstream& out, int indent) const {
@@ -879,10 +977,10 @@ void SemanticAnalyzer::printAST(const std::shared_ptr<ASTNode>& node, std::ofstr
             nodeStr = "Identifier: " + node->value + " (type=" + (node->cachedType.empty() ? "unknown" : node->cachedType) + ")";
             break;
         case NodeType::Number:
-            nodeStr = "Number: " + node->value + " (type=" + node->typeHint + ")";
+            nodeStr = "Number: " + node->value + " (type=" + (node->cachedType.empty() ? "unknown" : node->cachedType) + ")";
             break;
         case NodeType::String:
-            nodeStr = "String: " + node->value + " (type=" + node->typeHint + ")";
+            nodeStr = "String: " + node->value + " (type=" + (node->cachedType.empty() ? "unknown" : node->cachedType) + ")";
             break;
         case NodeType::Address:
             nodeStr = "Address: " + node->value + " (type=" + (node->cachedType.empty() ? "unknown" : node->cachedType) + ")";
@@ -922,6 +1020,13 @@ void SemanticAnalyzer::analyzeSemantics() {
         symbolTable.printIssues();
         issues = symbolTable.getIssues();
         saveASTToFile("../temp/processed_ast.txt");
+        if (symbolTable.hasOnlyWarnings()) {
+            std::cout << "Semantic analysis completed with warnings.\n";
+        } else if (symbolTable.getIssues().empty()) {
+            std::cout << "Semantic analysis completed successfully.\n";
+        } else {
+            std::cout << "Semantic analysis failed due to errors.\n";
+        }
     } else {
         std::cerr << "Error: No AST provided for semantic analysis" << std::endl;
     }
@@ -933,8 +1038,21 @@ void SemanticAnalyzer::generateTACOnly() {
         generateTAC(ast);
         printTAC();
         issues = symbolTable.getIssues();
+        std::cout << "TAC generation completed successfully.\n";
     } else {
         std::cerr << "Error: No AST provided for TAC generation" << std::endl;
+    }
+}
+
+void SemanticAnalyzer::generateTargetCodeOnly() {
+    if (ast) {
+        analyzeNode(ast);
+        generateTAC(ast);
+        generateTargetCode();
+        issues = symbolTable.getIssues();
+        std::cout << "Target code generation completed successfully.\n";
+    } else {
+        std::cerr << "Error: No AST provided for target code generation" << std::endl;
     }
 }
 
@@ -950,4 +1068,179 @@ void SemanticAnalyzer::saveASTToFile(const std::string& filename) const {
 
 const std::vector<SemanticIssue>& SemanticAnalyzer::getIssues() const {
     return issues;
+}
+
+void SemanticAnalyzer::analyzeFunction(const std::shared_ptr<ASTNode>& node) {
+    if (node->type != NodeType::Function) return;
+
+    // Extract function name and return type
+    std::string funcName = node->value;
+    std::string returnType = node->typeHint.empty() ? "void" : node->typeHint;
+    
+    // Enter function scope
+    symbolTable.enterFunction(funcName);
+    currentFunctionReturnType = returnType;
+
+    // Collect parameters if any
+    std::vector<std::string> paramTypes;
+    // TODO: Parse parameters from node->value if present (e.g., "main (int argc, char** argv)")
+
+    // Define function in symbol table
+    symbolTable.defineFunction(funcName, returnType, paramTypes, node->line);
+
+    // Analyze function body
+    for (const auto& child : node->children) {
+        analyzeNode(child);
+    }
+
+    // Exit function scope
+    symbolTable.exitFunction();
+    currentFunctionReturnType = "";
+}
+
+void SemanticAnalyzer::analyzeForLoop(const std::shared_ptr<ASTNode>& node) {
+    if (node->type != NodeType::For) return;
+
+    // Enter new scope for the loop
+    symbolTable.enterScope("for_loop");
+
+    std::string startLabel = newLabel();
+    std::string endLabel = newLabel();
+    loopLabels.push_back(endLabel);  // For break statements
+
+    // Process initialization
+    if (!node->children.empty() && node->children[0]->type == NodeType::Init) {
+        analyzeNode(node->children[0]);
+    }
+
+    // Generate TAC for loop
+    generateForLoopTAC(node);
+
+    // Analyze loop body
+    for (const auto& child : node->children) {
+        if (child->type != NodeType::Init && 
+            child->type != NodeType::Condition && 
+            child->type != NodeType::Update) {
+            analyzeNode(child);
+        }
+    }
+
+    // Exit loop scope
+    symbolTable.exitScope();
+    loopLabels.pop_back();
+}
+
+void SemanticAnalyzer::generateForLoopTAC(const std::shared_ptr<ASTNode>& node) {
+    std::string startLabel = newLabel();
+    std::string updateLabel = newLabel();
+    std::string endLabel = newLabel();
+
+    // Initialization
+    if (!node->children.empty() && node->children[0]->type == NodeType::Init) {
+        generateTAC(node->children[0]);
+    }
+
+    // Loop start
+    tacInstructions.emplace_back("", "LABEL", "", "", startLabel, node->line);
+
+    // Condition
+    std::string condResult;
+    for (const auto& child : node->children) {
+        if (child->type == NodeType::Condition) {
+            condResult = generateExpressionTAC(child);
+            break;
+        }
+    }
+    tacInstructions.emplace_back("", "JZ", condResult, "", endLabel, node->line);
+
+    // Loop body
+    for (const auto& child : node->children) {
+        if (child->type != NodeType::Init && 
+            child->type != NodeType::Condition && 
+            child->type != NodeType::Update) {
+            generateTAC(child);
+        }
+    }
+
+    // Update
+    tacInstructions.emplace_back("", "LABEL", "", "", updateLabel, node->line);
+    for (const auto& child : node->children) {
+        if (child->type == NodeType::Update) {
+            generateTAC(child);
+            break;
+        }
+    }
+
+    // Jump back to condition
+    tacInstructions.emplace_back("", "JMP", "", "", startLabel, node->line);
+    
+    // Loop end
+    tacInstructions.emplace_back("", "LABEL", "", "", endLabel, node->line);
+}
+
+void SemanticAnalyzer::analyzeVarDecl(const std::shared_ptr<ASTNode>& node) {
+    if (node->type != NodeType::VarDecl) return;
+
+    std::string varName = node->value;
+    std::string varType = node->typeHint;
+
+    // Check for initialization
+    if (!node->children.empty()) {
+        std::string initValue = node->children[0]->value;
+        symbolTable.declareWithInit(varName, varType, initValue, node->line);
+        
+        // Generate TAC for initialization
+        std::string temp = generateExpressionTAC(node->children[0]);
+        tacInstructions.emplace_back("", "STORE", temp, "", varName, node->line);
+    } else {
+        symbolTable.declare(varName, varType, "", node->line);
+    }
+}
+
+void SemanticAnalyzer::analyzeCompoundAssign(const std::shared_ptr<ASTNode>& node) {
+    if (node->type != NodeType::CompoundAssign) return;
+
+    std::string var = node->value;
+    const Symbol* symbol = symbolTable.lookup(var, node->line);
+    
+    if (!symbol) {
+        symbolTable.addWarning("Use of undeclared variable in compound assignment", node->line);
+        return;
+    }
+
+    // Generate TAC for compound assignment
+    generateCompoundAssignTAC(node);
+}
+
+void SemanticAnalyzer::generateCompoundAssignTAC(const std::shared_ptr<ASTNode>& node) {
+    if (!node || node->type != NodeType::CompoundAssign) return;
+
+    std::string var = node->value;
+    std::string op = node->typeHint;  // Assuming typeHint stores the operator type (+=, -=, etc.)
+    
+    // Generate TAC for the right-hand side expression
+    std::string rhs = generateExpressionTAC(node->children[0]);
+    
+    // Load the current value of the variable
+    std::string temp1 = newTemp();
+    tacInstructions.emplace_back("", "LOAD", var, "", temp1, node->line);
+    
+    // Perform the operation
+    std::string temp2 = newTemp();
+    std::string tacOp;
+    
+    if (op == "+=") tacOp = "ADD";
+    else if (op == "-=") tacOp = "SUB";
+    else if (op == "*=") tacOp = "MUL";
+    else if (op == "/=") tacOp = "DIV";
+    else if (op == "%=") tacOp = "MOD";
+    else {
+        issues.emplace_back("Error", "Unsupported compound assignment operator: " + op, "❌");
+        return;
+    }
+    
+    tacInstructions.emplace_back("", tacOp, temp1, rhs, temp2, node->line);
+    
+    // Store the result back in the variable
+    tacInstructions.emplace_back("", "STORE", temp2, "", var, node->line);
 }
