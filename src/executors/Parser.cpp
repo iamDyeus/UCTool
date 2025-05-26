@@ -60,6 +60,9 @@ ParsedNode parseLine(const std::string& line, int lineNumber) {
             if (endParenPos != std::string::npos) {
                 typeHint = rest.substr(parenPos + 1, endParenPos - parenPos - 1);
             }
+            value.erase(value.find_last_not_of(' ') + 1);
+        } else {
+            value = rest;
         }
     } else if (nodeType == NodeType::LocalDeclaration) {
         size_t spacePos = rest.find(' ');
@@ -75,8 +78,24 @@ ParsedNode parseLine(const std::string& line, int lineNumber) {
     } else if (nodeType == NodeType::VarDecl) {
         size_t spacePos = rest.find(' ');
         if (spacePos != std::string::npos) {
-            typeHint = rest.substr(0, spacePos);
-            value = rest.substr(spacePos + 1);
+            typeHint = rest.substr(0, spacePos); // e.g., "int"
+            std::string declRest = rest.substr(spacePos + 1);
+            size_t equalPos = declRest.find('=');
+            if (equalPos != std::string::npos) {
+                value = declRest.substr(0, equalPos);
+                value.erase(value.find_last_not_of(' ') + 1);
+            } else {
+                value = declRest;
+                value.erase(value.find_last_not_of(' ') + 1);
+            }
+        }
+    } else if (nodeType == NodeType::Assignment) {
+        size_t equalPos = rest.find('=');
+        if (equalPos != std::string::npos) {
+            value = rest.substr(0, equalPos);
+            value.erase(value.find_last_not_of(' ') + 1);
+        } else {
+            value = rest;
         }
     } else if (nodeType == NodeType::Call) {
         // Handle quoted function names (e.g., "printf(...)")
