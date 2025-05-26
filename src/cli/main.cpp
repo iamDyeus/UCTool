@@ -122,17 +122,26 @@ int main(int argc, char* argv[]) {
         std::ifstream in_file(ast_file);
         if (!in_file.is_open()) {
             std::cerr << "Warning: Could not open 'temp/parser-output.ast' for AI explanation\n";
+            input_data.clear();
+        } else {
+            std::stringstream in_buf;
+            in_buf << in_file.rdbuf();
+            input_data = in_buf.str();
+            in_file.close();
         }
-        std::stringstream in_buf;
-        in_buf << in_file.rdbuf();
-        input_data = in_buf.str();
-        std::ifstream out_file("../temp/semantic-output.txt");
+        std::ifstream out_file("../temp/processed_ast.txt");
         if (!out_file.is_open()) {
-            std::cerr << "Warning: Could not open 'temp/semantic-output.txt' for AI explanation\n";
+            std::cerr << "Warning: Could not open 'temp/processed_ast.txt' for AI explanation\n";
+            output_data.clear();
+        } else {
+            std::stringstream out_buf;
+            out_buf << out_file.rdbuf();
+            output_data = out_buf.str();
+            out_file.close();
+            if (output_data.empty()) {
+                std::cerr << "Warning: 'processed_ast.txt' is empty after semantic analysis. AI explanation may be missing or incomplete.\n";
+            }
         }
-        std::stringstream out_buf;
-        out_buf << out_file.rdbuf();
-        output_data = out_buf.str();
     }
     if (intermediate_mode) {
         std::cout << "Generating intermediate code for " << source_file << "...\n";
@@ -142,17 +151,26 @@ int main(int argc, char* argv[]) {
         std::ifstream in_file(ast_file);
         if (!in_file.is_open()) {
             std::cerr << "Warning: Could not open 'temp/parser-output.ast' for AI explanation\n";
+            input_data.clear();
+        } else {
+            std::stringstream in_buf;
+            in_buf << in_file.rdbuf();
+            input_data = in_buf.str();
+            in_file.close();
         }
-        std::stringstream in_buf;
-        in_buf << in_file.rdbuf();
-        input_data = in_buf.str();
-        std::ifstream out_file("../temp/tac-output.txt");
+        std::ifstream out_file("../temp/sample.tac");
         if (!out_file.is_open()) {
-            std::cerr << "Warning: Could not open 'temp/tac-output.txt' for AI explanation\n";
+            std::cerr << "Warning: Could not open 'temp/sample.tac' for AI explanation\n";
+            output_data.clear();
+        } else {
+            std::stringstream out_buf;
+            out_buf << out_file.rdbuf();
+            output_data = out_buf.str();
+            out_file.close();
+            if (output_data.empty()) {
+                std::cerr << "Warning: 'sample.tac' is empty after intermediate code generation. AI explanation may be missing or incomplete.\n";
+            }
         }
-        std::stringstream out_buf;
-        out_buf << out_file.rdbuf();
-        output_data = out_buf.str();
     }
     if (target_mode) {
         std::cout << "Generating target code for " << source_file << "...\n";
@@ -166,20 +184,36 @@ int main(int argc, char* argv[]) {
         std::stringstream in_buf;
         in_buf << in_file.rdbuf();
         input_data = in_buf.str();
-        std::ifstream out_file("../temp/target-output.txt");
+        std::ifstream out_file("../temp/sample.asm");
         if (!out_file.is_open()) {
-            std::cerr << "Warning: Could not open 'temp/target-output.txt' for AI explanation\n";
+            std::cerr << "Warning: Could not open 'temp/sample.asm' for AI explanation\n";
         }
         std::stringstream out_buf;
         out_buf << out_file.rdbuf();
         output_data = out_buf.str();
+        if (output_data.empty()) {
+            std::cerr << "Warning: 'sample.asm' is empty after target code generation. AI explanation may be missing or incomplete.\n";
+        }
     }
 
     if (help_mode) {
-        std::string explanation = generate_ai_help(stage, source_file, input_data, output_data);
-        std::cout << "===== AI EXPLANATION =====\n";
-        std::cout << explanation << std::endl;
-        std::cout << "=========================\n";
+        // Only call AI help if we have a valid stage and some input/output data
+        if (stage.empty()) {
+            std::cerr << "Error: No processing stage was completed. Cannot provide AI help.\n";
+        } else if (input_data.empty() && output_data.empty()) {
+            std::cerr << "Error: No input or output data available for AI help.\n";
+        } else {
+            try {
+                std::string explanation = generate_ai_help(stage, source_file, input_data, output_data);
+                std::cout << "===== AI EXPLANATION =====\n";
+                std::cout << explanation << std::endl;
+                std::cout << "=========================\n";
+            } catch (const std::exception& e) {
+                std::cerr << "AI help failed: " << e.what() << "\n";
+            } catch (...) {
+                std::cerr << "AI help failed due to an unknown error.\n";
+            }
+        }
     }
 
     return 0;

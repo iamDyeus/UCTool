@@ -10,7 +10,7 @@
 #include <jsoncpp/json/json.h>
 
 std::string get_env_api_key() {
-    std::ifstream env_file(".env");
+    std::ifstream env_file("../.env");
     std::string line;
     while (std::getline(env_file, line)) {
         if (line.find("GEMINI_API_KEY=") == 0) {
@@ -21,7 +21,7 @@ std::string get_env_api_key() {
 }
 
 std::string load_prompt_template(const std::string& stage, const std::string& input_file, const std::string& input_data, const std::string& output_data) {
-    std::ifstream prompt_file("src/ai/prompt_templates/help_prompt.txt");
+    std::ifstream prompt_file("../src/ai/prompt_templates/help_prompt.txt");
     std::stringstream buffer;
     buffer << prompt_file.rdbuf();
     std::string prompt = buffer.str();
@@ -35,26 +35,44 @@ std::string load_prompt_template(const std::string& stage, const std::string& in
 }
 
 std::string extract_gemini_text(const std::string& response) {
-    // Fallback: just find the first occurrence of "text" and extract everything until the next quote
-    std::string key = "\"text\":";
-    size_t start = response.find(key);
-    if (start == std::string::npos) return response; // fallback: print raw response
-    start = response.find('"', start + key.length());
-    if (start == std::string::npos) return response;
-    ++start;
-    size_t end = response.find('"', start);
-    if (end == std::string::npos) end = response.length();
-    std::string text = response.substr(start, end - start);
-    // Unescape common sequences
-    size_t pos = 0;
-    while ((pos = text.find("\\n", pos)) != std::string::npos) {
-        text.replace(pos, 2, "\n");
-        pos += 1;
+    // Try to parse as JSON and extract the "text" field if present
+    Json::Value root;
+    Json::CharReaderBuilder builder;
+    std::string errs;
+    std::istringstream iss(response);
+    if (Json::parseFromStream(builder, iss, &root, &errs)) {
+        // Try to find "text" at the top level or nested
+        if (root.isMember("text")) {
+            return root["text"].asString();
+        }
+        // Sometimes Gemini responses are arrays or nested objects
+        if (root.isArray() && root.size() > 0 && root[0].isMember("text")) {
+            return root[0]["text"].asString();
+        }
+        // Try to find "text" recursively (for deeply nested cases)
+        std::function<std::string(const Json::Value&)> find_text;
+        find_text = [&](const Json::Value& val) -> std::string {
+            if (val.isObject()) {
+                for (const auto& key : val.getMemberNames()) {
+                    if (key == "text" && val[key].isString()) {
+                        return val[key].asString();
+                    }
+                    std::string found = find_text(val[key]);
+                    if (!found.empty()) return found;
+                }
+            } else if (val.isArray()) {
+                for (const auto& item : val) {
+                    std::string found = find_text(item);
+                    if (!found.empty()) return found;
+                }
+            }
+            return "";
+        };
+        std::string found = find_text(root);
+        if (!found.empty()) return found;
     }
-    while ((pos = text.find("\\\"", 0)) != std::string::npos) {
-        text.replace(pos, 2, "\"");
-    }
-    return text;
+    // Fallback: return the raw response (don't try to parse quotes)
+    return response;
 }
 
 std::string read_file_contents(const std::string& path) {
