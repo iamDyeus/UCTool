@@ -1,0 +1,483 @@
+@iamDyeus ➜ /workspaces/UCTool/out (hotfix/prod) $ ./uctool ../sample.c --lexical
+Preprocessor: #include <stdio.h>
+Keyword: int
+Identifier: main
+Punctuation: (
+Punctuation: )
+Punctuation: {
+Keyword: int
+Identifier: a
+Operator: =
+Int: 5
+Punctuation: ;
+Keyword: int
+Identifier: b
+Operator: =
+Int: 10
+Punctuation: ;
+Keyword: int
+Identifier: temp
+Operator: =
+Identifier: a
+Punctuation: ;
+Identifier: a
+Operator: =
+Identifier: b
+Punctuation: ;
+Identifier: b
+Operator: =
+Identifier: temp
+Punctuation: ;
+Identifier: printf
+Punctuation: (
+String: "a: %d, b: %d\n"
+Punctuation: ,
+Identifier: a
+Punctuation: ,
+Identifier: b
+Punctuation: )
+Punctuation: ;
+Keyword: return
+Int: 0
+Punctuation: ;
+Punctuation: }
++----------------------+----------------------------------------+--------+--------+
+| Token Type           | Value                                  | Line   | Col    |
++----------------------+----------------------------------------+--------+--------+
+| Preprocessor         | #include <stdio.h>                     |      1 |     10 |
+| Keyword              | int                                    |      2 |      1 |
+| Identifier           | main                                   |      2 |      4 |
+| Punctuation          | (                                      |      2 |      8 |
+| Punctuation          | )                                      |      2 |      9 |
+| Punctuation          | {                                      |      2 |     10 |
+| Keyword              | int                                    |      3 |      1 |
+| Identifier           | a                                      |      3 |      4 |
+| Operator             | =                                      |      3 |      5 |
+| Int                  | 5                                      |      3 |      6 |
+| Punctuation          | ;                                      |      3 |      7 |
+| Keyword              | int                                    |      4 |      1 |
+| Identifier           | b                                      |      4 |      4 |
+| Operator             | =                                      |      4 |      5 |
+| Int                  | 10                                     |      4 |      6 |
+| Punctuation          | ;                                      |      4 |      8 |
+| Keyword              | int                                    |      5 |      1 |
+| Identifier           | temp                                   |      5 |      4 |
+| Operator             | =                                      |      5 |      8 |
+| Identifier           | a                                      |      5 |      9 |
+| Punctuation          | ;                                      |      5 |     10 |
+| Identifier           | a                                      |      6 |      1 |
+| Operator             | =                                      |      6 |      2 |
+| Identifier           | b                                      |      6 |      3 |
+| Punctuation          | ;                                      |      6 |      4 |
+| Identifier           | b                                      |      7 |      1 |
+| Operator             | =                                      |      7 |      2 |
+| Identifier           | temp                                   |      7 |      3 |
+| Punctuation          | ;                                      |      7 |      7 |
+| Identifier           | printf                                 |      8 |      1 |
+| Punctuation          | (                                      |      8 |      7 |
+| String               | "a: %d, b: %d\n"                       |      8 |      8 |
+| Punctuation          | ,                                      |      8 |     24 |
+| Identifier           | a                                      |      8 |     25 |
+| Punctuation          | ,                                      |      8 |     26 |
+| Identifier           | b                                      |      8 |     27 |
+| Punctuation          | )                                      |      8 |     28 |
+| Punctuation          | ;                                      |      8 |     29 |
+| Keyword              | return                                 |      9 |      1 |
+| Int                  | 0                                      |      9 |      7 |
+| Punctuation          | ;                                      |      9 |      8 |
+| Punctuation          | }                                      |     10 |      1 |
++----------------------+----------------------------------------+--------+--------+
+@iamDyeus ➜ /workspaces/UCTool/out (hotfix/prod) $ ./uctool ../sample.c --parse
+Error parsing token: +----------------------+----------------------------------------+--------+--------+
+Processing token: Preprocessor, Value: #include <stdio.h>
+Skipping #include: #include <stdio.h>
+Processing token: Keyword, Value: int
+Processing token: Identifier, Value: main
+Processing token: Punctuation, Value: (
+Processing token: Punctuation, Value: )
+Processing token: Punctuation, Value: {
+Processing token: Keyword, Value: int
+Processing token: Identifier, Value: a
+Processing token: Operator, Value: =
+Processing token: Int, Value: 5
+Processing token: Punctuation, Value: ;
+Building VarDecl: a, 5
+Building Local Declaration
+Adding statement to statement_list
+Processing token: Keyword, Value: int
+Processing token: Identifier, Value: b
+Processing token: Operator, Value: =
+Processing token: Int, Value: 10
+Processing token: Punctuation, Value: ;
+Building VarDecl: b, 10
+Building Local Declaration
+Adding statement to statement_list
+Processing token: Keyword, Value: int
+Processing token: Identifier, Value: temp
+Processing token: Operator, Value: =
+Processing token: Identifier, Value: a
+Processing token: Punctuation, Value: ;
+Building VarDecl: temp, a
+Building Local Declaration
+Adding statement to statement_list
+Processing token: Identifier, Value: a
+Processing token: Operator, Value: =
+Processing token: Identifier, Value: b
+Processing token: Punctuation, Value: ;
+Building Assignment: a, b
+Adding statement to statement_list
+Processing token: Identifier, Value: b
+Processing token: Operator, Value: =
+Processing token: Identifier, Value: temp
+Processing token: Punctuation, Value: ;
+Building Assignment: b, temp
+Adding statement to statement_list
+Processing token: Identifier, Value: printf
+Processing token: Punctuation, Value: (
+Processing token: String, Value: "a: %d, b: %d
+"
+Processing token: Punctuation, Value: ,
+Processing token: Identifier, Value: a
+Processing token: Punctuation, Value: ,
+Processing token: Identifier, Value: b
+Processing token: Punctuation, Value: )
+Processing token: Punctuation, Value: ;
+Building Call: printf
+Adding statement to statement_list
+Processing token: Keyword, Value: return
+Processing token: Int, Value: 0
+Processing token: Punctuation, Value: ;
+Building Return: 0
+Adding statement to statement_list
+Processing token: Punctuation, Value: }
+Building FunctionNode: main
+FunctionNode built with 7 statements
+Adding function to function_list
+Building ProgramNode
+ProgramNode built
+
+Parse Tree:
+Program
+  Function: main (int)
+    LocalDeclaration: int declarations
+      VarDecl: int a = 5
+        Number: 5
+    LocalDeclaration: int declarations
+      VarDecl: int b = 10
+        Number: 10
+    LocalDeclaration: int declarations
+      VarDecl: int temp = a
+        Identifier: a
+    Assignment: a = b
+      Identifier: b
+    Assignment: b = temp
+      Identifier: temp
+    Call: "printf("a: %d, b: %d\n", a, b)"
+      String: "a: %d, b: %d\n"
+      Identifier: a
+      Identifier: b
+    Return: 0
+      Number: 0
+
+@iamDyeus ➜ /workspaces/UCTool/out (hotfix/prod) $ ./uctool ../sample.c --semantic
+Running semantic analysis on ../sample.c...
+Debug: Parsed line 1: No colon, Type=Program, Value=, TypeHint=
+Debug: Final parsed line 1: Type=Program, Value=, TypeHint=
+Debug: Parsed line 2: Colon found, Type=Function, Rest=main (int)
+Debug: Final parsed line 2: Type=Function, Value=main, TypeHint=int
+Debug: Parsed line 3: Colon found, Type=LocalDeclaration, Rest=int declarations
+Debug: Final parsed line 3: Type=LocalDeclaration, Value=, TypeHint=
+Debug: Parsed line 4: Colon found, Type=VarDecl, Rest=int a = 5
+Debug: Final parsed line 4: Type=VarDecl, Value=a, TypeHint=int
+Debug: Parsed line 5: Colon found, Type=Number, Rest=5
+Debug: Final parsed line 5: Type=Number, Value=5, TypeHint=
+Debug: Parsed line 6: Colon found, Type=LocalDeclaration, Rest=int declarations
+Debug: Final parsed line 6: Type=LocalDeclaration, Value=, TypeHint=
+Debug: Parsed line 7: Colon found, Type=VarDecl, Rest=int b = 10
+Debug: Final parsed line 7: Type=VarDecl, Value=b, TypeHint=int
+Debug: Parsed line 8: Colon found, Type=Number, Rest=10
+Debug: Final parsed line 8: Type=Number, Value=10, TypeHint=
+Debug: Parsed line 9: Colon found, Type=LocalDeclaration, Rest=int declarations
+Debug: Final parsed line 9: Type=LocalDeclaration, Value=, TypeHint=
+Debug: Parsed line 10: Colon found, Type=VarDecl, Rest=int temp = a
+Debug: Final parsed line 10: Type=VarDecl, Value=temp, TypeHint=int
+Debug: Parsed line 11: Colon found, Type=Identifier, Rest=a
+Debug: Final parsed line 11: Type=Identifier, Value=a, TypeHint=
+Debug: Parsed line 12: Colon found, Type=Assignment, Rest=a = b
+Debug: Final parsed line 12: Type=Assignment, Value=a, TypeHint=
+Debug: Parsed line 13: Colon found, Type=Identifier, Rest=b
+Debug: Final parsed line 13: Type=Identifier, Value=b, TypeHint=
+Debug: Parsed line 14: Colon found, Type=Assignment, Rest=b = temp
+Debug: Final parsed line 14: Type=Assignment, Value=b, TypeHint=
+Debug: Parsed line 15: Colon found, Type=Identifier, Rest=temp
+Debug: Final parsed line 15: Type=Identifier, Value=temp, TypeHint=
+Debug: Parsed line 16: Colon found, Type=Call, Rest="printf("a: %d, b: %d\n", a, b)"
+Debug: Final parsed line 16: Type=Call, Value=printf, TypeHint=
+Debug: Parsed line 17: Colon found, Type=String, Rest="a: %d, b: %d\n"
+Debug: Final parsed line 17: Type=String, Value="a: %d, b: %d\n", TypeHint=
+Debug: Parsed line 18: Colon found, Type=Identifier, Rest=a
+Debug: Final parsed line 18: Type=Identifier, Value=a, TypeHint=
+Debug: Parsed line 19: Colon found, Type=Identifier, Rest=b
+Debug: Final parsed line 19: Type=Identifier, Value=b, TypeHint=
+Debug: Parsed line 20: Colon found, Type=Return, Rest=0
+Debug: Final parsed line 20: Type=Return, Value=0, TypeHint=
+Debug: Parsed line 21: Colon found, Type=Number, Rest=0
+Debug: Final parsed line 21: Type=Number, Value=0, TypeHint=
+Symbol Table
+Generated on: Mon May 26 18:54:11 2025
+============================================================================================
+
+╔═════════════════════╤══════════════════════╤═══════════════╤══════════════════╤════════════╤═══════╤═══════╗
+║ Name                │ Type                │ Scope         │ Attributes       │ Initialized│ Used  │ Line  ║
+╠═════════════════════╪══════════════════════╪═══════════════╪══════════════════╪════════════╪═══════╪═══════╣
+║ main                │ int                 │ global        │ function         │ No         │ No    │      2║
+╚═════════════════════╧══════════════════════╧═══════════════╧══════════════════╧════════════╧═══════╧═══════╝
+
+Total Symbols: 1
+============================================================================================
+
+Type Checking
+Generated on: Mon May 26 18:54:11 2025
+====================================================================================================
+
++-------------------------------+-------------------------------------------------------------+-------------+
+| Location                      | Description                                                 | Status      |
++-------------------------------+-------------------------------------------------------------+-------------+
+| main                          | Function definition with return type int                    | OK          |
+| a                             | Variable declaration with initialization of type int        | OK          |
+| b                             | Variable declaration with initialization of type int        | OK          |
+| temp                          | Variable declaration with initialization of type int        | OK          |
+| b                             | Expression uses variable 'b' of type int                    | OK          |
+| a = b                         | Assigning int expression to int variable                    | OK          |
+| temp                          | Expression uses variable 'temp' of type int                 | OK          |
+| b = temp                      | Assigning int expression to int variable                    | OK          |
+| 0                             | Number literal '0' of type int                              | OK          |
++-------------------------------+-------------------------------------------------------------+-------------+
+
+Total Type Checks: 9
+Status: All passed
+====================================================================================================
+
+Scope Checking
+Generated on: Mon May 26 18:54:11 2025
+============================================================
+
++---------------------+-----------------+---------------+
+| Scope               | Action          | Symbol Count  |
++---------------------+-----------------+---------------+
+| main                | Entered         |              0|
+| main                | Entered         |              0|
+| main                | Exited          |              3|
++---------------------+-----------------+---------------+
+
+Total Scope Actions: 3
+Status: All scopes properly managed
+============================================================
+
+Semantic Errors/Warnings
+Generated on: Mon May 26 18:54:11 2025
+====================================================================================================
+
++-------------+-------------------------------------------------------------+-------------+
+| Type        | Description                                                 | Status      |
++-------------+-------------------------------------------------------------+-------------+
+| Error       | No errors found                                             | ✅         |
+| Warning     | No warnings found                                           | ✅         |
++-------------+-------------------------------------------------------------+-------------+
+
+Total Issues: 0
+Status: No major semantic errors detected
+====================================================================================================
+
+Semantic analysis completed with warnings.
+Segmentation fault (core dumped)
+@iamDyeus ➜ /workspaces/UCTool/out (hotfix/prod) $ ./uctool ../sample.c --intermediate
+Generating intermediate code for ../sample.c...
+Debug: Parsed line 1: No colon, Type=Program, Value=, TypeHint=
+Debug: Final parsed line 1: Type=Program, Value=, TypeHint=
+Debug: Parsed line 2: Colon found, Type=Function, Rest=main (int)
+Debug: Final parsed line 2: Type=Function, Value=main, TypeHint=int
+Debug: Parsed line 3: Colon found, Type=LocalDeclaration, Rest=int declarations
+Debug: Final parsed line 3: Type=LocalDeclaration, Value=, TypeHint=
+Debug: Parsed line 4: Colon found, Type=VarDecl, Rest=int a = 5
+Debug: Final parsed line 4: Type=VarDecl, Value=a, TypeHint=int
+Debug: Parsed line 5: Colon found, Type=Number, Rest=5
+Debug: Final parsed line 5: Type=Number, Value=5, TypeHint=
+Debug: Parsed line 6: Colon found, Type=LocalDeclaration, Rest=int declarations
+Debug: Final parsed line 6: Type=LocalDeclaration, Value=, TypeHint=
+Debug: Parsed line 7: Colon found, Type=VarDecl, Rest=int b = 10
+Debug: Final parsed line 7: Type=VarDecl, Value=b, TypeHint=int
+Debug: Parsed line 8: Colon found, Type=Number, Rest=10
+Debug: Final parsed line 8: Type=Number, Value=10, TypeHint=
+Debug: Parsed line 9: Colon found, Type=LocalDeclaration, Rest=int declarations
+Debug: Final parsed line 9: Type=LocalDeclaration, Value=, TypeHint=
+Debug: Parsed line 10: Colon found, Type=VarDecl, Rest=int temp = a
+Debug: Final parsed line 10: Type=VarDecl, Value=temp, TypeHint=int
+Debug: Parsed line 11: Colon found, Type=Identifier, Rest=a
+Debug: Final parsed line 11: Type=Identifier, Value=a, TypeHint=
+Debug: Parsed line 12: Colon found, Type=Assignment, Rest=a = b
+Debug: Final parsed line 12: Type=Assignment, Value=a, TypeHint=
+Debug: Parsed line 13: Colon found, Type=Identifier, Rest=b
+Debug: Final parsed line 13: Type=Identifier, Value=b, TypeHint=
+Debug: Parsed line 14: Colon found, Type=Assignment, Rest=b = temp
+Debug: Final parsed line 14: Type=Assignment, Value=b, TypeHint=
+Debug: Parsed line 15: Colon found, Type=Identifier, Rest=temp
+Debug: Final parsed line 15: Type=Identifier, Value=temp, TypeHint=
+Debug: Parsed line 16: Colon found, Type=Call, Rest="printf("a: %d, b: %d\n", a, b)"
+Debug: Final parsed line 16: Type=Call, Value=printf, TypeHint=
+Debug: Parsed line 17: Colon found, Type=String, Rest="a: %d, b: %d\n"
+Debug: Final parsed line 17: Type=String, Value="a: %d, b: %d\n", TypeHint=
+Debug: Parsed line 18: Colon found, Type=Identifier, Rest=a
+Debug: Final parsed line 18: Type=Identifier, Value=a, TypeHint=
+Debug: Parsed line 19: Colon found, Type=Identifier, Rest=b
+Debug: Final parsed line 19: Type=Identifier, Value=b, TypeHint=
+Debug: Parsed line 20: Colon found, Type=Return, Rest=0
+Debug: Final parsed line 20: Type=Return, Value=0, TypeHint=
+Debug: Parsed line 21: Colon found, Type=Number, Rest=0
+Debug: Final parsed line 21: Type=Number, Value=0, TypeHint=
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                                       Three Address Code (TAC)                                        ║
+║                              Generated on: Mon May 26 18:54:26 2025                ║
+╠══════════════════════════════════════════════════════════════════════════════════════════════════════╣
+
+╔═══════════════════════╤═══════════════╤═══════════════════════╤═══════════════╤═══════════════╤═════════╗
+║ Label               │ Operation     │ Argument 1          │ Argument 2    │ Result        │ Line    ║
+╠═══════════════════════╪═══════════════╪═══════════════════════╪═══════════════╪═══════════════╪═════════╣
+║                     │ LOAD          │ 5                   │               │ r1            │        5 ║
+║                     │ STORE         │ r1                  │               │ a             │        4 ║
+║                     │ LOAD          │ 10                  │               │ r2            │        8 ║
+║                     │ STORE         │ r2                  │               │ b             │        7 ║
+║                     │ STORE         │ a                   │               │ temp          │       10 ║
+║ func_main:          │               │                     │               │               │        2 ║
+╟───────────────────────┼───────────────┼───────────────────────┼───────────────┼───────────────┼─────────╢
+║                     │ LOAD          │ 5                   │               │ r1            │        5 ║
+║                     │ STORE         │ r1                  │               │ a             │        4 ║
+║                     │ LOAD          │ 10                  │               │ r2            │        8 ║
+║                     │ STORE         │ r2                  │               │ b             │        7 ║
+║                     │ STORE         │ a                   │               │ temp          │       10 ║
+║                     │ LOAD          │ b                   │               │ r3            │       13 ║
+║                     │ STORE         │ r3                  │               │ a             │       12 ║
+║                     │ LOAD          │ temp                │               │ r4            │       15 ║
+║                     │ STORE         │ r4                  │               │ b             │       14 ║
+║                     │ LOAD          │ ""a: %d, b: %d\n""  │               │ t1            │       17 ║
+║                     │ CALL          │ printf              │ t1,a,b        │               │       16 ║
+║                     │ LOAD          │ 0                   │               │ t2            │       21 ║
+║                     │ RET           │ t2                  │               │               │       20 ║
+║                     │ END           │                     │               │               │        2 ║
+╚═══════════════════════╧═══════════════╧═══════════════════════╧═══════════════╧═══════════════╧═════════╝
+
+╔══════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║ Summary                                                                                               ║
+╟──────────────────────────────────────────────────────────────────────────────────────────────────────╢
+║ Total Instructions: 20                                                                     ║
+║ Status: Generation completed successfully                                                 ║
+╚══════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+TAC generation completed successfully.
+Segmentation fault (core dumped)
+@iamDyeus ➜ /workspaces/UCTool/out (hotfix/prod) $ ./uctool ../sample.c --target
+Generating target code for ../sample.c...
+Debug: Parsed line 1: No colon, Type=Program, Value=, TypeHint=
+Debug: Final parsed line 1: Type=Program, Value=, TypeHint=
+Debug: Parsed line 2: Colon found, Type=Function, Rest=main (int)
+Debug: Final parsed line 2: Type=Function, Value=main, TypeHint=int
+Debug: Parsed line 3: Colon found, Type=LocalDeclaration, Rest=int declarations
+Debug: Final parsed line 3: Type=LocalDeclaration, Value=, TypeHint=
+Debug: Parsed line 4: Colon found, Type=VarDecl, Rest=int a = 5
+Debug: Final parsed line 4: Type=VarDecl, Value=a, TypeHint=int
+Debug: Parsed line 5: Colon found, Type=Number, Rest=5
+Debug: Final parsed line 5: Type=Number, Value=5, TypeHint=
+Debug: Parsed line 6: Colon found, Type=LocalDeclaration, Rest=int declarations
+Debug: Final parsed line 6: Type=LocalDeclaration, Value=, TypeHint=
+Debug: Parsed line 7: Colon found, Type=VarDecl, Rest=int b = 10
+Debug: Final parsed line 7: Type=VarDecl, Value=b, TypeHint=int
+Debug: Parsed line 8: Colon found, Type=Number, Rest=10
+Debug: Final parsed line 8: Type=Number, Value=10, TypeHint=
+Debug: Parsed line 9: Colon found, Type=LocalDeclaration, Rest=int declarations
+Debug: Final parsed line 9: Type=LocalDeclaration, Value=, TypeHint=
+Debug: Parsed line 10: Colon found, Type=VarDecl, Rest=int temp = a
+Debug: Final parsed line 10: Type=VarDecl, Value=temp, TypeHint=int
+Debug: Parsed line 11: Colon found, Type=Identifier, Rest=a
+Debug: Final parsed line 11: Type=Identifier, Value=a, TypeHint=
+Debug: Parsed line 12: Colon found, Type=Assignment, Rest=a = b
+Debug: Final parsed line 12: Type=Assignment, Value=a, TypeHint=
+Debug: Parsed line 13: Colon found, Type=Identifier, Rest=b
+Debug: Final parsed line 13: Type=Identifier, Value=b, TypeHint=
+Debug: Parsed line 14: Colon found, Type=Assignment, Rest=b = temp
+Debug: Final parsed line 14: Type=Assignment, Value=b, TypeHint=
+Debug: Parsed line 15: Colon found, Type=Identifier, Rest=temp
+Debug: Final parsed line 15: Type=Identifier, Value=temp, TypeHint=
+Debug: Parsed line 16: Colon found, Type=Call, Rest="printf("a: %d, b: %d\n", a, b)"
+Debug: Final parsed line 16: Type=Call, Value=printf, TypeHint=
+Debug: Parsed line 17: Colon found, Type=String, Rest="a: %d, b: %d\n"
+Debug: Final parsed line 17: Type=String, Value="a: %d, b: %d\n", TypeHint=
+Debug: Parsed line 18: Colon found, Type=Identifier, Rest=a
+Debug: Final parsed line 18: Type=Identifier, Value=a, TypeHint=
+Debug: Parsed line 19: Colon found, Type=Identifier, Rest=b
+Debug: Final parsed line 19: Type=Identifier, Value=b, TypeHint=
+Debug: Parsed line 20: Colon found, Type=Return, Rest=0
+Debug: Final parsed line 20: Type=Return, Value=0, TypeHint=
+Debug: Parsed line 21: Colon found, Type=Number, Rest=0
+Debug: Final parsed line 21: Type=Number, Value=0, TypeHint=
+; Target Code (x86 Assembly)
+; Generated on: Mon May 26 18:54:38 2025
+; ============================================================
+
+section .data
+str1: db ""a: %d, b: %d\n"", 0
+
+section .text
+global _start
+
+    ; Load value
+    MOV r1, 5
+    ; Store value
+    MOV [a], r1
+    ; Load value
+    MOV r2, 10
+    ; Store value
+    MOV [b], r2
+    ; Store value
+    MOV [temp], a
+func_main:
+    ; Load value
+    MOV r1, 5
+    ; Store value
+    MOV [a], r1
+    ; Load value
+    MOV r2, 10
+    ; Store value
+    MOV [b], r2
+    ; Store value
+    MOV [temp], a
+    ; Load value
+    MOV r3, b
+    ; Store value
+    MOV [a], r3
+    ; Load value
+    MOV r4, temp
+    ; Store value
+    MOV [b], r4
+    ; Load value
+    MOV t1, ""a: %d, b: %d\n""
+    ; Call function
+    CALL printf
+    ; Load value
+    MOV t2, 0
+    ; Return
+    MOV RAX, t2
+    RET
+    ; End function
+    RET
+
+_start:
+    ; Program entry point
+    CALL func_main
+    MOV RAX, 60
+    XOR RDI, RDI
+    SYSCALL
+; ============================================================
+Target code generation completed successfully.
+Segmentation fault (core dumped)
+@iamDyeus ➜ /workspaces/UCTool/out (hotfix/prod) $ 

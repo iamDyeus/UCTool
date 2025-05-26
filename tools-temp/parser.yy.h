@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.8.2.  */
+/* A Bison parser, made by GNU Bison 3.5.1.  */
 
 /* Bison interface for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2021 Free Software Foundation,
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
    Inc.
 
    This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -31,9 +31,8 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-/* DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
-   especially those whose name start with YY_ or yy_.  They are
-   private implementation details that can be changed or removed.  */
+/* Undocumented macros, especially those whose name start with YY_,
+   are private implementation details.  Do not rely on them.  */
 
 #ifndef YY_YY_TOOLS_TEMP_PARSER_YY_H_INCLUDED
 # define YY_YY_TOOLS_TEMP_PARSER_YY_H_INCLUDED
@@ -45,49 +44,44 @@
 extern int yydebug;
 #endif
 
-/* Token kinds.  */
+/* Token type.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
   enum yytokentype
   {
-    YYEMPTY = -2,
-    YYEOF = 0,                     /* "end of file"  */
-    YYerror = 256,                 /* error  */
-    YYUNDEF = 257,                 /* "invalid token"  */
-    INT = 258,                     /* INT  */
-    RETURN = 259,                  /* RETURN  */
-    FLOAT = 260,                   /* FLOAT  */
-    VOID = 261,                    /* VOID  */
-    IF = 262,                      /* IF  */
-    ELSE = 263,                    /* ELSE  */
-    FOR = 264,                     /* FOR  */
-    WHILE = 265,                   /* WHILE  */
-    STRUCT = 266,                  /* STRUCT  */
-    ASSIGN = 267,                  /* ASSIGN  */
-    MULTEQ = 268,                  /* MULTEQ  */
-    LE = 269,                      /* LE  */
-    GT = 270,                      /* GT  */
-    LT = 271,                      /* LT  */
-    EQ = 272,                      /* EQ  */
-    PLUS = 273,                    /* PLUS  */
-    MINUS = 274,                   /* MINUS  */
-    MULT = 275,                    /* MULT  */
-    DIV = 276,                     /* DIV  */
-    MOD = 277,                     /* MOD  */
-    ADDRESS = 278,                 /* ADDRESS  */
-    PLUSPLUS = 279,                /* PLUSPLUS  */
-    COMMA = 280,                   /* COMMA  */
-    PREPROCESSOR = 281,            /* PREPROCESSOR  */
-    IDENTIFIER = 282,              /* IDENTIFIER  */
-    STRING = 283,                  /* STRING  */
-    NUMBER = 284,                  /* NUMBER  */
-    LPAREN = 285,                  /* LPAREN  */
-    RPAREN = 286,                  /* RPAREN  */
-    LBRACE = 287,                  /* LBRACE  */
-    RBRACE = 288,                  /* RBRACE  */
-    SEMICOLON = 289                /* SEMICOLON  */
+    INT = 258,
+    RETURN = 259,
+    FLOAT = 260,
+    VOID = 261,
+    IF = 262,
+    ELSE = 263,
+    FOR = 264,
+    WHILE = 265,
+    STRUCT = 266,
+    ASSIGN = 267,
+    MULTEQ = 268,
+    LE = 269,
+    GT = 270,
+    LT = 271,
+    EQ = 272,
+    PLUS = 273,
+    MINUS = 274,
+    MULT = 275,
+    DIV = 276,
+    MOD = 277,
+    ADDRESS = 278,
+    PLUSPLUS = 279,
+    COMMA = 280,
+    PREPROCESSOR = 281,
+    IDENTIFIER = 282,
+    STRING = 283,
+    NUMBER = 284,
+    LPAREN = 285,
+    RPAREN = 286,
+    LBRACE = 287,
+    RBRACE = 288,
+    SEMICOLON = 289
   };
-  typedef enum yytokentype yytoken_kind_t;
 #endif
 
 /* Value type.  */
@@ -105,7 +99,7 @@ union YYSTYPE
     std::vector<FunctionNode*>* func_list;
     std::vector<ASTNode*>* expr_list;
 
-#line 109 "tools-temp/parser.yy.h"
+#line 103 "tools-temp/parser.yy.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -116,8 +110,6 @@ typedef union YYSTYPE YYSTYPE;
 
 extern YYSTYPE yylval;
 
-
 int yyparse (void);
-
 
 #endif /* !YY_YY_TOOLS_TEMP_PARSER_YY_H_INCLUDED  */
