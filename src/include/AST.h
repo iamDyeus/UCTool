@@ -14,6 +14,7 @@ enum class NodeType {
     VarDecl,
     Assignment,
     While,
+    For,
     Call,
     IfElse,
     Return,
@@ -24,8 +25,21 @@ enum class NodeType {
     Modulo,
     Equal,
     Add,
+    Subtract,
+    Multiply,
+    Divide,
     Less,
-    Increment
+    LessEqual,
+    Greater,
+    GreaterEqual,
+    NotEqual,
+    Increment,
+    PreIncrement,
+    PostIncrement,
+    CompoundAssign,  // For +=, -=, *=, /=
+    Init,           // For loop initialization
+    Condition,      // For loop condition
+    Update         // For loop update
 };
 
 struct ASTNode {
