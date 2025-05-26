@@ -1,0 +1,21 @@
+Program
+  Function: main (int)
+    Declarations
+      VarDecl: int a (type=int)
+        Number: 5 (type=unknown)
+    Declarations
+      VarDecl: int b (type=int)
+        Number: 10 (type=unknown)
+    Declarations
+      VarDecl: int temp (type=int)
+        Identifier: a (type=unknown)
+    Assignment: a (type=int)
+      Identifier: b (type=int)
+    Assignment: b (type=int)
+      Identifier: temp (type=int)
+    Call: "printf("a: %d, b: %d\n", a, b)" (args=unknown,unknown,unknown)
+      String: "a: %d, b: %d\n" (type=unknown)
+      Identifier: a (type=unknown)
+      Identifier: b (type=unknown)
+    Return: 0 (type=int)
+      Number: 0 (type=int)

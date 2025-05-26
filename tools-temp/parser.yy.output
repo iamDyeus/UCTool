@@ -1,0 +1,1990 @@
+State 114 conflicts: 1 shift/reduce
+State 128 conflicts: 1 shift/reduce
+State 130 conflicts: 1 reduce/reduce
+State 131 conflicts: 1 reduce/reduce
+
+
+Grammar
+
+    0 $accept: program $end
+
+    1 program: preprocessor_list declaration_list function_list
+
+    2 preprocessor_list: ε
+    3                  | preprocessor_list PREPROCESSOR
+
+    4 declaration_list: ε
+    5                 | declaration_list declaration
+    6                 | declaration_list struct_declaration
+
+    7 function_list: ε
+    8              | function_list function
+
+    9 function: INT IDENTIFIER LPAREN RPAREN LBRACE statement_list RBRACE
+   10         | VOID IDENTIFIER LPAREN RPAREN LBRACE statement_list RBRACE
+
+   11 statement_list: ε
+   12               | statement_list statement
+
+   13 statement: IDENTIFIER LPAREN expression_list RPAREN SEMICOLON
+   14          | RETURN expression SEMICOLON
+   15          | expression_statement
+   16          | if_statement
+   17          | for_statement
+   18          | while_statement
+   19          | local_declaration
+   20          | assignment_statement
+   21          | struct_declaration
+   22          | declaration
+
+   23 expression_statement: expression SEMICOLON
+
+   24 declaration: FLOAT IDENTIFIER SEMICOLON
+   25            | FLOAT IDENTIFIER ASSIGN expression SEMICOLON
+
+   26 local_declaration: INT var_decls SEMICOLON
+
+   27 var_decls: IDENTIFIER
+   28          | IDENTIFIER ASSIGN expression
+   29          | var_decls COMMA IDENTIFIER
+   30          | var_decls COMMA IDENTIFIER ASSIGN expression
+
+   31 if_statement: IF LPAREN expression RPAREN LBRACE statement_list RBRACE
+   32             | IF LPAREN expression RPAREN statement
+   33             | IF LPAREN expression RPAREN LBRACE statement_list RBRACE ELSE LBRACE statement_list RBRACE
+   34             | IF LPAREN expression RPAREN statement ELSE statement
+
+   35 for_statement: FOR LPAREN local_declaration expression SEMICOLON incr_expression RPAREN LBRACE statement_list RBRACE
+   36              | FOR LPAREN local_declaration expression SEMICOLON incr_expression RPAREN statement
+
+   37 incr_expression: expression
+   38                | IDENTIFIER PLUSPLUS
+   39                | PLUSPLUS IDENTIFIER
+
+   40 while_statement: WHILE LPAREN expression RPAREN LBRACE statement_list RBRACE
+   41                | WHILE LPAREN expression RPAREN statement
+
+   42 struct_declaration: STRUCT IDENTIFIER LBRACE declaration_list RBRACE SEMICOLON
+
+   43 assignment_statement: IDENTIFIER ASSIGN expression SEMICOLON
+   44                     | IDENTIFIER MULTEQ expression SEMICOLON
+
+   45 expression_list: ε
+   46                | expression
+   47                | expression_list COMMA expression
+
+   48 expression: term
+   49           | expression PLUS term
+   50           | expression MINUS term
+   51           | expression MULT term
+   52           | expression DIV term
+   53           | expression MOD term
+   54           | expression GT term
+   55           | expression LT term
+   56           | expression LE term
+   57           | expression EQ term
+   58           | ADDRESS term
+
+   59 term: IDENTIFIER
+   60     | NUMBER
+   61     | STRING
+   62     | LPAREN expression RPAREN
+   63     | IDENTIFIER PLUSPLUS
+   64     | PLUSPLUS IDENTIFIER
+
+
+Terminals, with rules where they appear
+
+    $end (0) 0
+    error (256)
+    INT (258) 9 26
+    RETURN (259) 14
+    FLOAT (260) 24 25
+    VOID (261) 10
+    IF (262) 31 32 33 34
+    ELSE (263) 33 34
+    FOR (264) 35 36
+    WHILE (265) 40 41
+    STRUCT (266) 42
+    ASSIGN (267) 25 28 30 43
+    MULTEQ (268) 44
+    LE (269) 56
+    GT (270) 54
+    LT (271) 55
+    EQ (272) 57
+    PLUS (273) 49
+    MINUS (274) 50
+    MULT (275) 51
+    DIV (276) 52
+    MOD (277) 53
+    ADDRESS (278) 58
+    PLUSPLUS (279) 38 39 63 64
+    COMMA (280) 29 30 47
+    PREPROCESSOR <str> (281) 3
+    IDENTIFIER <str> (282) 9 10 13 24 25 27 28 29 30 38 39 42 43 44 59 63 64
+    STRING <str> (283) 61
+    NUMBER <str> (284) 60
+    LPAREN (285) 9 10 13 31 32 33 34 35 36 40 41 62
+    RPAREN (286) 9 10 13 31 32 33 34 35 36 40 41 62
+    LBRACE (287) 9 10 31 33 35 40 42
+    RBRACE (288) 9 10 31 33 35 40 42
+    SEMICOLON (289) 13 14 23 24 25 26 35 36 42 43 44
+
+
+Nonterminals, with rules where they appear
+
+    $accept (35)
+        on left: 0
+    program <program> (36)
+        on left: 1
+        on right: 0
+    preprocessor_list <statement> (37)
+        on left: 2 3
+        on right: 1 3
+    declaration_list <decl_list> (38)
+        on left: 4 5 6
+        on right: 1 5 6 42
+    function_list <func_list> (39)
+        on left: 7 8
+        on right: 1 8
+    function <function> (40)
+        on left: 9 10
+        on right: 8
+    statement_list <statement> (41)
+        on left: 11 12
+        on right: 9 10 12 31 33 35 40
+    statement <statement> (42)
+        on left: 13 14 15 16 17 18 19 20 21 22
+        on right: 12 32 34 36 41
+    expression_statement <statement> (43)
+        on left: 23
+        on right: 15
+    declaration <statement> (44)
+        on left: 24 25
+        on right: 5 22
+    local_declaration <statement> (45)
+        on left: 26
+        on right: 19 35 36
+    var_decls <decl_list> (46)
+        on left: 27 28 29 30
+        on right: 26 29 30
+    if_statement <statement> (47)
+        on left: 31 32 33 34
+        on right: 16
+    for_statement <statement> (48)
+        on left: 35 36
+        on right: 17
+    incr_expression <node> (49)
+        on left: 37 38 39
+        on right: 35 36
+    while_statement <statement> (50)
+        on left: 40 41
+        on right: 18
+    struct_declaration <statement> (51)
+        on left: 42
+        on right: 6 21
+    assignment_statement <statement> (52)
+        on left: 43 44
+        on right: 20
+    expression_list <expr_list> (53)
+        on left: 45 46 47
+        on right: 13 47
+    expression <node> (54)
+        on left: 48 49 50 51 52 53 54 55 56 57 58
+        on right: 14 23 25 28 30 31 32 33 34 35 36 37 40 41 43 44 46 47 49 50 51 52 53 54 55 56 57 62
+    term <node> (55)
+        on left: 59 60 61 62 63 64
+        on right: 48 49 50 51 52 53 54 55 56 57 58
+
+
+State 0
+
+    0 $accept: • program $end
+
+    $default  reduce using rule 2 (preprocessor_list)
+
+    program            go to state 1
+    preprocessor_list  go to state 2
+
+
+State 1
+
+    0 $accept: program • $end
+
+    $end  shift, and go to state 3
+
+
+State 2
+
+    1 program: preprocessor_list • declaration_list function_list
+    3 preprocessor_list: preprocessor_list • PREPROCESSOR
+
+    PREPROCESSOR  shift, and go to state 4
+
+    $default  reduce using rule 4 (declaration_list)
+
+    declaration_list  go to state 5
+
+
+State 3
+
+    0 $accept: program $end •
+
+    $default  accept
+
+
+State 4
+
+    3 preprocessor_list: preprocessor_list PREPROCESSOR •
+
+    $default  reduce using rule 3 (preprocessor_list)
+
+
+State 5
+
+    1 program: preprocessor_list declaration_list • function_list
+    5 declaration_list: declaration_list • declaration
+    6                 | declaration_list • struct_declaration
+
+    FLOAT   shift, and go to state 6
+    STRUCT  shift, and go to state 7
+
+    $default  reduce using rule 7 (function_list)
+
+    function_list       go to state 8
+    declaration         go to state 9
+    struct_declaration  go to state 10
+
+
+State 6
+
+   24 declaration: FLOAT • IDENTIFIER SEMICOLON
+   25            | FLOAT • IDENTIFIER ASSIGN expression SEMICOLON
+
+    IDENTIFIER  shift, and go to state 11
+
+
+State 7
+
+   42 struct_declaration: STRUCT • IDENTIFIER LBRACE declaration_list RBRACE SEMICOLON
+
+    IDENTIFIER  shift, and go to state 12
+
+
+State 8
+
+    1 program: preprocessor_list declaration_list function_list •
+    8 function_list: function_list • function
+
+    INT   shift, and go to state 13
+    VOID  shift, and go to state 14
+
+    $default  reduce using rule 1 (program)
+
+    function  go to state 15
+
+
+State 9
+
+    5 declaration_list: declaration_list declaration •
+
+    $default  reduce using rule 5 (declaration_list)
+
+
+State 10
+
+    6 declaration_list: declaration_list struct_declaration •
+
+    $default  reduce using rule 6 (declaration_list)
+
+
+State 11
+
+   24 declaration: FLOAT IDENTIFIER • SEMICOLON
+   25            | FLOAT IDENTIFIER • ASSIGN expression SEMICOLON
+
+    ASSIGN     shift, and go to state 16
+    SEMICOLON  shift, and go to state 17
+
+
+State 12
+
+   42 struct_declaration: STRUCT IDENTIFIER • LBRACE declaration_list RBRACE SEMICOLON
+
+    LBRACE  shift, and go to state 18
+
+
+State 13
+
+    9 function: INT • IDENTIFIER LPAREN RPAREN LBRACE statement_list RBRACE
+
+    IDENTIFIER  shift, and go to state 19
+
+
+State 14
+
+   10 function: VOID • IDENTIFIER LPAREN RPAREN LBRACE statement_list RBRACE
+
+    IDENTIFIER  shift, and go to state 20
+
+
+State 15
+
+    8 function_list: function_list function •
+
+    $default  reduce using rule 8 (function_list)
+
+
+State 16
+
+   25 declaration: FLOAT IDENTIFIER ASSIGN • expression SEMICOLON
+
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    expression  go to state 27
+    term        go to state 28
+
+
+State 17
+
+   24 declaration: FLOAT IDENTIFIER SEMICOLON •
+
+    $default  reduce using rule 24 (declaration)
+
+
+State 18
+
+   42 struct_declaration: STRUCT IDENTIFIER LBRACE • declaration_list RBRACE SEMICOLON
+
+    $default  reduce using rule 4 (declaration_list)
+
+    declaration_list  go to state 29
+
+
+State 19
+
+    9 function: INT IDENTIFIER • LPAREN RPAREN LBRACE statement_list RBRACE
+
+    LPAREN  shift, and go to state 30
+
+
+State 20
+
+   10 function: VOID IDENTIFIER • LPAREN RPAREN LBRACE statement_list RBRACE
+
+    LPAREN  shift, and go to state 31
+
+
+State 21
+
+   58 expression: ADDRESS • term
+
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    term  go to state 32
+
+
+State 22
+
+   64 term: PLUSPLUS • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 33
+
+
+State 23
+
+   59 term: IDENTIFIER •
+   63     | IDENTIFIER • PLUSPLUS
+
+    PLUSPLUS  shift, and go to state 34
+
+    $default  reduce using rule 59 (term)
+
+
+State 24
+
+   61 term: STRING •
+
+    $default  reduce using rule 61 (term)
+
+
+State 25
+
+   60 term: NUMBER •
+
+    $default  reduce using rule 60 (term)
+
+
+State 26
+
+   62 term: LPAREN • expression RPAREN
+
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    expression  go to state 35
+    term        go to state 28
+
+
+State 27
+
+   25 declaration: FLOAT IDENTIFIER ASSIGN expression • SEMICOLON
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+
+    LE         shift, and go to state 36
+    GT         shift, and go to state 37
+    LT         shift, and go to state 38
+    EQ         shift, and go to state 39
+    PLUS       shift, and go to state 40
+    MINUS      shift, and go to state 41
+    MULT       shift, and go to state 42
+    DIV        shift, and go to state 43
+    MOD        shift, and go to state 44
+    SEMICOLON  shift, and go to state 45
+
+
+State 28
+
+   48 expression: term •
+
+    $default  reduce using rule 48 (expression)
+
+
+State 29
+
+    5 declaration_list: declaration_list • declaration
+    6                 | declaration_list • struct_declaration
+   42 struct_declaration: STRUCT IDENTIFIER LBRACE declaration_list • RBRACE SEMICOLON
+
+    FLOAT   shift, and go to state 6
+    STRUCT  shift, and go to state 7
+    RBRACE  shift, and go to state 46
+
+    declaration         go to state 9
+    struct_declaration  go to state 10
+
+
+State 30
+
+    9 function: INT IDENTIFIER LPAREN • RPAREN LBRACE statement_list RBRACE
+
+    RPAREN  shift, and go to state 47
+
+
+State 31
+
+   10 function: VOID IDENTIFIER LPAREN • RPAREN LBRACE statement_list RBRACE
+
+    RPAREN  shift, and go to state 48
+
+
+State 32
+
+   58 expression: ADDRESS term •
+
+    $default  reduce using rule 58 (expression)
+
+
+State 33
+
+   64 term: PLUSPLUS IDENTIFIER •
+
+    $default  reduce using rule 64 (term)
+
+
+State 34
+
+   63 term: IDENTIFIER PLUSPLUS •
+
+    $default  reduce using rule 63 (term)
+
+
+State 35
+
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+   62 term: LPAREN expression • RPAREN
+
+    LE      shift, and go to state 36
+    GT      shift, and go to state 37
+    LT      shift, and go to state 38
+    EQ      shift, and go to state 39
+    PLUS    shift, and go to state 40
+    MINUS   shift, and go to state 41
+    MULT    shift, and go to state 42
+    DIV     shift, and go to state 43
+    MOD     shift, and go to state 44
+    RPAREN  shift, and go to state 49
+
+
+State 36
+
+   56 expression: expression LE • term
+
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    term  go to state 50
+
+
+State 37
+
+   54 expression: expression GT • term
+
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    term  go to state 51
+
+
+State 38
+
+   55 expression: expression LT • term
+
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    term  go to state 52
+
+
+State 39
+
+   57 expression: expression EQ • term
+
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    term  go to state 53
+
+
+State 40
+
+   49 expression: expression PLUS • term
+
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    term  go to state 54
+
+
+State 41
+
+   50 expression: expression MINUS • term
+
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    term  go to state 55
+
+
+State 42
+
+   51 expression: expression MULT • term
+
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    term  go to state 56
+
+
+State 43
+
+   52 expression: expression DIV • term
+
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    term  go to state 57
+
+
+State 44
+
+   53 expression: expression MOD • term
+
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    term  go to state 58
+
+
+State 45
+
+   25 declaration: FLOAT IDENTIFIER ASSIGN expression SEMICOLON •
+
+    $default  reduce using rule 25 (declaration)
+
+
+State 46
+
+   42 struct_declaration: STRUCT IDENTIFIER LBRACE declaration_list RBRACE • SEMICOLON
+
+    SEMICOLON  shift, and go to state 59
+
+
+State 47
+
+    9 function: INT IDENTIFIER LPAREN RPAREN • LBRACE statement_list RBRACE
+
+    LBRACE  shift, and go to state 60
+
+
+State 48
+
+   10 function: VOID IDENTIFIER LPAREN RPAREN • LBRACE statement_list RBRACE
+
+    LBRACE  shift, and go to state 61
+
+
+State 49
+
+   62 term: LPAREN expression RPAREN •
+
+    $default  reduce using rule 62 (term)
+
+
+State 50
+
+   56 expression: expression LE term •
+
+    $default  reduce using rule 56 (expression)
+
+
+State 51
+
+   54 expression: expression GT term •
+
+    $default  reduce using rule 54 (expression)
+
+
+State 52
+
+   55 expression: expression LT term •
+
+    $default  reduce using rule 55 (expression)
+
+
+State 53
+
+   57 expression: expression EQ term •
+
+    $default  reduce using rule 57 (expression)
+
+
+State 54
+
+   49 expression: expression PLUS term •
+
+    $default  reduce using rule 49 (expression)
+
+
+State 55
+
+   50 expression: expression MINUS term •
+
+    $default  reduce using rule 50 (expression)
+
+
+State 56
+
+   51 expression: expression MULT term •
+
+    $default  reduce using rule 51 (expression)
+
+
+State 57
+
+   52 expression: expression DIV term •
+
+    $default  reduce using rule 52 (expression)
+
+
+State 58
+
+   53 expression: expression MOD term •
+
+    $default  reduce using rule 53 (expression)
+
+
+State 59
+
+   42 struct_declaration: STRUCT IDENTIFIER LBRACE declaration_list RBRACE SEMICOLON •
+
+    $default  reduce using rule 42 (struct_declaration)
+
+
+State 60
+
+    9 function: INT IDENTIFIER LPAREN RPAREN LBRACE • statement_list RBRACE
+
+    $default  reduce using rule 11 (statement_list)
+
+    statement_list  go to state 62
+
+
+State 61
+
+   10 function: VOID IDENTIFIER LPAREN RPAREN LBRACE • statement_list RBRACE
+
+    $default  reduce using rule 11 (statement_list)
+
+    statement_list  go to state 63
+
+
+State 62
+
+    9 function: INT IDENTIFIER LPAREN RPAREN LBRACE statement_list • RBRACE
+   12 statement_list: statement_list • statement
+
+    INT         shift, and go to state 64
+    RETURN      shift, and go to state 65
+    FLOAT       shift, and go to state 6
+    IF          shift, and go to state 66
+    FOR         shift, and go to state 67
+    WHILE       shift, and go to state 68
+    STRUCT      shift, and go to state 7
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 69
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+    RBRACE      shift, and go to state 70
+
+    statement             go to state 71
+    expression_statement  go to state 72
+    declaration           go to state 73
+    local_declaration     go to state 74
+    if_statement          go to state 75
+    for_statement         go to state 76
+    while_statement       go to state 77
+    struct_declaration    go to state 78
+    assignment_statement  go to state 79
+    expression            go to state 80
+    term                  go to state 28
+
+
+State 63
+
+   10 function: VOID IDENTIFIER LPAREN RPAREN LBRACE statement_list • RBRACE
+   12 statement_list: statement_list • statement
+
+    INT         shift, and go to state 64
+    RETURN      shift, and go to state 65
+    FLOAT       shift, and go to state 6
+    IF          shift, and go to state 66
+    FOR         shift, and go to state 67
+    WHILE       shift, and go to state 68
+    STRUCT      shift, and go to state 7
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 69
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+    RBRACE      shift, and go to state 81
+
+    statement             go to state 71
+    expression_statement  go to state 72
+    declaration           go to state 73
+    local_declaration     go to state 74
+    if_statement          go to state 75
+    for_statement         go to state 76
+    while_statement       go to state 77
+    struct_declaration    go to state 78
+    assignment_statement  go to state 79
+    expression            go to state 80
+    term                  go to state 28
+
+
+State 64
+
+   26 local_declaration: INT • var_decls SEMICOLON
+
+    IDENTIFIER  shift, and go to state 82
+
+    var_decls  go to state 83
+
+
+State 65
+
+   14 statement: RETURN • expression SEMICOLON
+
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    expression  go to state 84
+    term        go to state 28
+
+
+State 66
+
+   31 if_statement: IF • LPAREN expression RPAREN LBRACE statement_list RBRACE
+   32             | IF • LPAREN expression RPAREN statement
+   33             | IF • LPAREN expression RPAREN LBRACE statement_list RBRACE ELSE LBRACE statement_list RBRACE
+   34             | IF • LPAREN expression RPAREN statement ELSE statement
+
+    LPAREN  shift, and go to state 85
+
+
+State 67
+
+   35 for_statement: FOR • LPAREN local_declaration expression SEMICOLON incr_expression RPAREN LBRACE statement_list RBRACE
+   36              | FOR • LPAREN local_declaration expression SEMICOLON incr_expression RPAREN statement
+
+    LPAREN  shift, and go to state 86
+
+
+State 68
+
+   40 while_statement: WHILE • LPAREN expression RPAREN LBRACE statement_list RBRACE
+   41                | WHILE • LPAREN expression RPAREN statement
+
+    LPAREN  shift, and go to state 87
+
+
+State 69
+
+   13 statement: IDENTIFIER • LPAREN expression_list RPAREN SEMICOLON
+   43 assignment_statement: IDENTIFIER • ASSIGN expression SEMICOLON
+   44                     | IDENTIFIER • MULTEQ expression SEMICOLON
+   59 term: IDENTIFIER •
+   63     | IDENTIFIER • PLUSPLUS
+
+    ASSIGN    shift, and go to state 88
+    MULTEQ    shift, and go to state 89
+    PLUSPLUS  shift, and go to state 34
+    LPAREN    shift, and go to state 90
+
+    $default  reduce using rule 59 (term)
+
+
+State 70
+
+    9 function: INT IDENTIFIER LPAREN RPAREN LBRACE statement_list RBRACE •
+
+    $default  reduce using rule 9 (function)
+
+
+State 71
+
+   12 statement_list: statement_list statement •
+
+    $default  reduce using rule 12 (statement_list)
+
+
+State 72
+
+   15 statement: expression_statement •
+
+    $default  reduce using rule 15 (statement)
+
+
+State 73
+
+   22 statement: declaration •
+
+    $default  reduce using rule 22 (statement)
+
+
+State 74
+
+   19 statement: local_declaration •
+
+    $default  reduce using rule 19 (statement)
+
+
+State 75
+
+   16 statement: if_statement •
+
+    $default  reduce using rule 16 (statement)
+
+
+State 76
+
+   17 statement: for_statement •
+
+    $default  reduce using rule 17 (statement)
+
+
+State 77
+
+   18 statement: while_statement •
+
+    $default  reduce using rule 18 (statement)
+
+
+State 78
+
+   21 statement: struct_declaration •
+
+    $default  reduce using rule 21 (statement)
+
+
+State 79
+
+   20 statement: assignment_statement •
+
+    $default  reduce using rule 20 (statement)
+
+
+State 80
+
+   23 expression_statement: expression • SEMICOLON
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+
+    LE         shift, and go to state 36
+    GT         shift, and go to state 37
+    LT         shift, and go to state 38
+    EQ         shift, and go to state 39
+    PLUS       shift, and go to state 40
+    MINUS      shift, and go to state 41
+    MULT       shift, and go to state 42
+    DIV        shift, and go to state 43
+    MOD        shift, and go to state 44
+    SEMICOLON  shift, and go to state 91
+
+
+State 81
+
+   10 function: VOID IDENTIFIER LPAREN RPAREN LBRACE statement_list RBRACE •
+
+    $default  reduce using rule 10 (function)
+
+
+State 82
+
+   27 var_decls: IDENTIFIER •
+   28          | IDENTIFIER • ASSIGN expression
+
+    ASSIGN  shift, and go to state 92
+
+    $default  reduce using rule 27 (var_decls)
+
+
+State 83
+
+   26 local_declaration: INT var_decls • SEMICOLON
+   29 var_decls: var_decls • COMMA IDENTIFIER
+   30          | var_decls • COMMA IDENTIFIER ASSIGN expression
+
+    COMMA      shift, and go to state 93
+    SEMICOLON  shift, and go to state 94
+
+
+State 84
+
+   14 statement: RETURN expression • SEMICOLON
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+
+    LE         shift, and go to state 36
+    GT         shift, and go to state 37
+    LT         shift, and go to state 38
+    EQ         shift, and go to state 39
+    PLUS       shift, and go to state 40
+    MINUS      shift, and go to state 41
+    MULT       shift, and go to state 42
+    DIV        shift, and go to state 43
+    MOD        shift, and go to state 44
+    SEMICOLON  shift, and go to state 95
+
+
+State 85
+
+   31 if_statement: IF LPAREN • expression RPAREN LBRACE statement_list RBRACE
+   32             | IF LPAREN • expression RPAREN statement
+   33             | IF LPAREN • expression RPAREN LBRACE statement_list RBRACE ELSE LBRACE statement_list RBRACE
+   34             | IF LPAREN • expression RPAREN statement ELSE statement
+
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    expression  go to state 96
+    term        go to state 28
+
+
+State 86
+
+   35 for_statement: FOR LPAREN • local_declaration expression SEMICOLON incr_expression RPAREN LBRACE statement_list RBRACE
+   36              | FOR LPAREN • local_declaration expression SEMICOLON incr_expression RPAREN statement
+
+    INT  shift, and go to state 64
+
+    local_declaration  go to state 97
+
+
+State 87
+
+   40 while_statement: WHILE LPAREN • expression RPAREN LBRACE statement_list RBRACE
+   41                | WHILE LPAREN • expression RPAREN statement
+
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    expression  go to state 98
+    term        go to state 28
+
+
+State 88
+
+   43 assignment_statement: IDENTIFIER ASSIGN • expression SEMICOLON
+
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    expression  go to state 99
+    term        go to state 28
+
+
+State 89
+
+   44 assignment_statement: IDENTIFIER MULTEQ • expression SEMICOLON
+
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    expression  go to state 100
+    term        go to state 28
+
+
+State 90
+
+   13 statement: IDENTIFIER LPAREN • expression_list RPAREN SEMICOLON
+
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    $default  reduce using rule 45 (expression_list)
+
+    expression_list  go to state 101
+    expression       go to state 102
+    term             go to state 28
+
+
+State 91
+
+   23 expression_statement: expression SEMICOLON •
+
+    $default  reduce using rule 23 (expression_statement)
+
+
+State 92
+
+   28 var_decls: IDENTIFIER ASSIGN • expression
+
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    expression  go to state 103
+    term        go to state 28
+
+
+State 93
+
+   29 var_decls: var_decls COMMA • IDENTIFIER
+   30          | var_decls COMMA • IDENTIFIER ASSIGN expression
+
+    IDENTIFIER  shift, and go to state 104
+
+
+State 94
+
+   26 local_declaration: INT var_decls SEMICOLON •
+
+    $default  reduce using rule 26 (local_declaration)
+
+
+State 95
+
+   14 statement: RETURN expression SEMICOLON •
+
+    $default  reduce using rule 14 (statement)
+
+
+State 96
+
+   31 if_statement: IF LPAREN expression • RPAREN LBRACE statement_list RBRACE
+   32             | IF LPAREN expression • RPAREN statement
+   33             | IF LPAREN expression • RPAREN LBRACE statement_list RBRACE ELSE LBRACE statement_list RBRACE
+   34             | IF LPAREN expression • RPAREN statement ELSE statement
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+
+    LE      shift, and go to state 36
+    GT      shift, and go to state 37
+    LT      shift, and go to state 38
+    EQ      shift, and go to state 39
+    PLUS    shift, and go to state 40
+    MINUS   shift, and go to state 41
+    MULT    shift, and go to state 42
+    DIV     shift, and go to state 43
+    MOD     shift, and go to state 44
+    RPAREN  shift, and go to state 105
+
+
+State 97
+
+   35 for_statement: FOR LPAREN local_declaration • expression SEMICOLON incr_expression RPAREN LBRACE statement_list RBRACE
+   36              | FOR LPAREN local_declaration • expression SEMICOLON incr_expression RPAREN statement
+
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    expression  go to state 106
+    term        go to state 28
+
+
+State 98
+
+   40 while_statement: WHILE LPAREN expression • RPAREN LBRACE statement_list RBRACE
+   41                | WHILE LPAREN expression • RPAREN statement
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+
+    LE      shift, and go to state 36
+    GT      shift, and go to state 37
+    LT      shift, and go to state 38
+    EQ      shift, and go to state 39
+    PLUS    shift, and go to state 40
+    MINUS   shift, and go to state 41
+    MULT    shift, and go to state 42
+    DIV     shift, and go to state 43
+    MOD     shift, and go to state 44
+    RPAREN  shift, and go to state 107
+
+
+State 99
+
+   43 assignment_statement: IDENTIFIER ASSIGN expression • SEMICOLON
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+
+    LE         shift, and go to state 36
+    GT         shift, and go to state 37
+    LT         shift, and go to state 38
+    EQ         shift, and go to state 39
+    PLUS       shift, and go to state 40
+    MINUS      shift, and go to state 41
+    MULT       shift, and go to state 42
+    DIV        shift, and go to state 43
+    MOD        shift, and go to state 44
+    SEMICOLON  shift, and go to state 108
+
+
+State 100
+
+   44 assignment_statement: IDENTIFIER MULTEQ expression • SEMICOLON
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+
+    LE         shift, and go to state 36
+    GT         shift, and go to state 37
+    LT         shift, and go to state 38
+    EQ         shift, and go to state 39
+    PLUS       shift, and go to state 40
+    MINUS      shift, and go to state 41
+    MULT       shift, and go to state 42
+    DIV        shift, and go to state 43
+    MOD        shift, and go to state 44
+    SEMICOLON  shift, and go to state 109
+
+
+State 101
+
+   13 statement: IDENTIFIER LPAREN expression_list • RPAREN SEMICOLON
+   47 expression_list: expression_list • COMMA expression
+
+    COMMA   shift, and go to state 110
+    RPAREN  shift, and go to state 111
+
+
+State 102
+
+   46 expression_list: expression •
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+
+    LE     shift, and go to state 36
+    GT     shift, and go to state 37
+    LT     shift, and go to state 38
+    EQ     shift, and go to state 39
+    PLUS   shift, and go to state 40
+    MINUS  shift, and go to state 41
+    MULT   shift, and go to state 42
+    DIV    shift, and go to state 43
+    MOD    shift, and go to state 44
+
+    $default  reduce using rule 46 (expression_list)
+
+
+State 103
+
+   28 var_decls: IDENTIFIER ASSIGN expression •
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+
+    LE     shift, and go to state 36
+    GT     shift, and go to state 37
+    LT     shift, and go to state 38
+    EQ     shift, and go to state 39
+    PLUS   shift, and go to state 40
+    MINUS  shift, and go to state 41
+    MULT   shift, and go to state 42
+    DIV    shift, and go to state 43
+    MOD    shift, and go to state 44
+
+    $default  reduce using rule 28 (var_decls)
+
+
+State 104
+
+   29 var_decls: var_decls COMMA IDENTIFIER •
+   30          | var_decls COMMA IDENTIFIER • ASSIGN expression
+
+    ASSIGN  shift, and go to state 112
+
+    $default  reduce using rule 29 (var_decls)
+
+
+State 105
+
+   31 if_statement: IF LPAREN expression RPAREN • LBRACE statement_list RBRACE
+   32             | IF LPAREN expression RPAREN • statement
+   33             | IF LPAREN expression RPAREN • LBRACE statement_list RBRACE ELSE LBRACE statement_list RBRACE
+   34             | IF LPAREN expression RPAREN • statement ELSE statement
+
+    INT         shift, and go to state 64
+    RETURN      shift, and go to state 65
+    FLOAT       shift, and go to state 6
+    IF          shift, and go to state 66
+    FOR         shift, and go to state 67
+    WHILE       shift, and go to state 68
+    STRUCT      shift, and go to state 7
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 69
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+    LBRACE      shift, and go to state 113
+
+    statement             go to state 114
+    expression_statement  go to state 72
+    declaration           go to state 73
+    local_declaration     go to state 74
+    if_statement          go to state 75
+    for_statement         go to state 76
+    while_statement       go to state 77
+    struct_declaration    go to state 78
+    assignment_statement  go to state 79
+    expression            go to state 80
+    term                  go to state 28
+
+
+State 106
+
+   35 for_statement: FOR LPAREN local_declaration expression • SEMICOLON incr_expression RPAREN LBRACE statement_list RBRACE
+   36              | FOR LPAREN local_declaration expression • SEMICOLON incr_expression RPAREN statement
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+
+    LE         shift, and go to state 36
+    GT         shift, and go to state 37
+    LT         shift, and go to state 38
+    EQ         shift, and go to state 39
+    PLUS       shift, and go to state 40
+    MINUS      shift, and go to state 41
+    MULT       shift, and go to state 42
+    DIV        shift, and go to state 43
+    MOD        shift, and go to state 44
+    SEMICOLON  shift, and go to state 115
+
+
+State 107
+
+   40 while_statement: WHILE LPAREN expression RPAREN • LBRACE statement_list RBRACE
+   41                | WHILE LPAREN expression RPAREN • statement
+
+    INT         shift, and go to state 64
+    RETURN      shift, and go to state 65
+    FLOAT       shift, and go to state 6
+    IF          shift, and go to state 66
+    FOR         shift, and go to state 67
+    WHILE       shift, and go to state 68
+    STRUCT      shift, and go to state 7
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 69
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+    LBRACE      shift, and go to state 116
+
+    statement             go to state 117
+    expression_statement  go to state 72
+    declaration           go to state 73
+    local_declaration     go to state 74
+    if_statement          go to state 75
+    for_statement         go to state 76
+    while_statement       go to state 77
+    struct_declaration    go to state 78
+    assignment_statement  go to state 79
+    expression            go to state 80
+    term                  go to state 28
+
+
+State 108
+
+   43 assignment_statement: IDENTIFIER ASSIGN expression SEMICOLON •
+
+    $default  reduce using rule 43 (assignment_statement)
+
+
+State 109
+
+   44 assignment_statement: IDENTIFIER MULTEQ expression SEMICOLON •
+
+    $default  reduce using rule 44 (assignment_statement)
+
+
+State 110
+
+   47 expression_list: expression_list COMMA • expression
+
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    expression  go to state 118
+    term        go to state 28
+
+
+State 111
+
+   13 statement: IDENTIFIER LPAREN expression_list RPAREN • SEMICOLON
+
+    SEMICOLON  shift, and go to state 119
+
+
+State 112
+
+   30 var_decls: var_decls COMMA IDENTIFIER ASSIGN • expression
+
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 23
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    expression  go to state 120
+    term        go to state 28
+
+
+State 113
+
+   31 if_statement: IF LPAREN expression RPAREN LBRACE • statement_list RBRACE
+   33             | IF LPAREN expression RPAREN LBRACE • statement_list RBRACE ELSE LBRACE statement_list RBRACE
+
+    $default  reduce using rule 11 (statement_list)
+
+    statement_list  go to state 121
+
+
+State 114
+
+   32 if_statement: IF LPAREN expression RPAREN statement •
+   34             | IF LPAREN expression RPAREN statement • ELSE statement
+
+    ELSE  shift, and go to state 122
+
+    ELSE      [reduce using rule 32 (if_statement)]
+    $default  reduce using rule 32 (if_statement)
+
+
+State 115
+
+   35 for_statement: FOR LPAREN local_declaration expression SEMICOLON • incr_expression RPAREN LBRACE statement_list RBRACE
+   36              | FOR LPAREN local_declaration expression SEMICOLON • incr_expression RPAREN statement
+
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 123
+    IDENTIFIER  shift, and go to state 124
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    incr_expression  go to state 125
+    expression       go to state 126
+    term             go to state 28
+
+
+State 116
+
+   40 while_statement: WHILE LPAREN expression RPAREN LBRACE • statement_list RBRACE
+
+    $default  reduce using rule 11 (statement_list)
+
+    statement_list  go to state 127
+
+
+State 117
+
+   41 while_statement: WHILE LPAREN expression RPAREN statement •
+
+    $default  reduce using rule 41 (while_statement)
+
+
+State 118
+
+   47 expression_list: expression_list COMMA expression •
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+
+    LE     shift, and go to state 36
+    GT     shift, and go to state 37
+    LT     shift, and go to state 38
+    EQ     shift, and go to state 39
+    PLUS   shift, and go to state 40
+    MINUS  shift, and go to state 41
+    MULT   shift, and go to state 42
+    DIV    shift, and go to state 43
+    MOD    shift, and go to state 44
+
+    $default  reduce using rule 47 (expression_list)
+
+
+State 119
+
+   13 statement: IDENTIFIER LPAREN expression_list RPAREN SEMICOLON •
+
+    $default  reduce using rule 13 (statement)
+
+
+State 120
+
+   30 var_decls: var_decls COMMA IDENTIFIER ASSIGN expression •
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+
+    LE     shift, and go to state 36
+    GT     shift, and go to state 37
+    LT     shift, and go to state 38
+    EQ     shift, and go to state 39
+    PLUS   shift, and go to state 40
+    MINUS  shift, and go to state 41
+    MULT   shift, and go to state 42
+    DIV    shift, and go to state 43
+    MOD    shift, and go to state 44
+
+    $default  reduce using rule 30 (var_decls)
+
+
+State 121
+
+   12 statement_list: statement_list • statement
+   31 if_statement: IF LPAREN expression RPAREN LBRACE statement_list • RBRACE
+   33             | IF LPAREN expression RPAREN LBRACE statement_list • RBRACE ELSE LBRACE statement_list RBRACE
+
+    INT         shift, and go to state 64
+    RETURN      shift, and go to state 65
+    FLOAT       shift, and go to state 6
+    IF          shift, and go to state 66
+    FOR         shift, and go to state 67
+    WHILE       shift, and go to state 68
+    STRUCT      shift, and go to state 7
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 69
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+    RBRACE      shift, and go to state 128
+
+    statement             go to state 71
+    expression_statement  go to state 72
+    declaration           go to state 73
+    local_declaration     go to state 74
+    if_statement          go to state 75
+    for_statement         go to state 76
+    while_statement       go to state 77
+    struct_declaration    go to state 78
+    assignment_statement  go to state 79
+    expression            go to state 80
+    term                  go to state 28
+
+
+State 122
+
+   34 if_statement: IF LPAREN expression RPAREN statement ELSE • statement
+
+    INT         shift, and go to state 64
+    RETURN      shift, and go to state 65
+    FLOAT       shift, and go to state 6
+    IF          shift, and go to state 66
+    FOR         shift, and go to state 67
+    WHILE       shift, and go to state 68
+    STRUCT      shift, and go to state 7
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 69
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+
+    statement             go to state 129
+    expression_statement  go to state 72
+    declaration           go to state 73
+    local_declaration     go to state 74
+    if_statement          go to state 75
+    for_statement         go to state 76
+    while_statement       go to state 77
+    struct_declaration    go to state 78
+    assignment_statement  go to state 79
+    expression            go to state 80
+    term                  go to state 28
+
+
+State 123
+
+   39 incr_expression: PLUSPLUS • IDENTIFIER
+   64 term: PLUSPLUS • IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 130
+
+
+State 124
+
+   38 incr_expression: IDENTIFIER • PLUSPLUS
+   59 term: IDENTIFIER •
+   63     | IDENTIFIER • PLUSPLUS
+
+    PLUSPLUS  shift, and go to state 131
+
+    $default  reduce using rule 59 (term)
+
+
+State 125
+
+   35 for_statement: FOR LPAREN local_declaration expression SEMICOLON incr_expression • RPAREN LBRACE statement_list RBRACE
+   36              | FOR LPAREN local_declaration expression SEMICOLON incr_expression • RPAREN statement
+
+    RPAREN  shift, and go to state 132
+
+
+State 126
+
+   37 incr_expression: expression •
+   49 expression: expression • PLUS term
+   50           | expression • MINUS term
+   51           | expression • MULT term
+   52           | expression • DIV term
+   53           | expression • MOD term
+   54           | expression • GT term
+   55           | expression • LT term
+   56           | expression • LE term
+   57           | expression • EQ term
+
+    LE     shift, and go to state 36
+    GT     shift, and go to state 37
+    LT     shift, and go to state 38
+    EQ     shift, and go to state 39
+    PLUS   shift, and go to state 40
+    MINUS  shift, and go to state 41
+    MULT   shift, and go to state 42
+    DIV    shift, and go to state 43
+    MOD    shift, and go to state 44
+
+    $default  reduce using rule 37 (incr_expression)
+
+
+State 127
+
+   12 statement_list: statement_list • statement
+   40 while_statement: WHILE LPAREN expression RPAREN LBRACE statement_list • RBRACE
+
+    INT         shift, and go to state 64
+    RETURN      shift, and go to state 65
+    FLOAT       shift, and go to state 6
+    IF          shift, and go to state 66
+    FOR         shift, and go to state 67
+    WHILE       shift, and go to state 68
+    STRUCT      shift, and go to state 7
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 69
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+    RBRACE      shift, and go to state 133
+
+    statement             go to state 71
+    expression_statement  go to state 72
+    declaration           go to state 73
+    local_declaration     go to state 74
+    if_statement          go to state 75
+    for_statement         go to state 76
+    while_statement       go to state 77
+    struct_declaration    go to state 78
+    assignment_statement  go to state 79
+    expression            go to state 80
+    term                  go to state 28
+
+
+State 128
+
+   31 if_statement: IF LPAREN expression RPAREN LBRACE statement_list RBRACE •
+   33             | IF LPAREN expression RPAREN LBRACE statement_list RBRACE • ELSE LBRACE statement_list RBRACE
+
+    ELSE  shift, and go to state 134
+
+    ELSE      [reduce using rule 31 (if_statement)]
+    $default  reduce using rule 31 (if_statement)
+
+
+State 129
+
+   34 if_statement: IF LPAREN expression RPAREN statement ELSE statement •
+
+    $default  reduce using rule 34 (if_statement)
+
+
+State 130
+
+   39 incr_expression: PLUSPLUS IDENTIFIER •
+   64 term: PLUSPLUS IDENTIFIER •
+
+    RPAREN    reduce using rule 39 (incr_expression)
+    RPAREN    [reduce using rule 64 (term)]
+    $default  reduce using rule 64 (term)
+
+
+State 131
+
+   38 incr_expression: IDENTIFIER PLUSPLUS •
+   63 term: IDENTIFIER PLUSPLUS •
+
+    RPAREN    reduce using rule 38 (incr_expression)
+    RPAREN    [reduce using rule 63 (term)]
+    $default  reduce using rule 63 (term)
+
+
+State 132
+
+   35 for_statement: FOR LPAREN local_declaration expression SEMICOLON incr_expression RPAREN • LBRACE statement_list RBRACE
+   36              | FOR LPAREN local_declaration expression SEMICOLON incr_expression RPAREN • statement
+
+    INT         shift, and go to state 64
+    RETURN      shift, and go to state 65
+    FLOAT       shift, and go to state 6
+    IF          shift, and go to state 66
+    FOR         shift, and go to state 67
+    WHILE       shift, and go to state 68
+    STRUCT      shift, and go to state 7
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 69
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+    LBRACE      shift, and go to state 135
+
+    statement             go to state 136
+    expression_statement  go to state 72
+    declaration           go to state 73
+    local_declaration     go to state 74
+    if_statement          go to state 75
+    for_statement         go to state 76
+    while_statement       go to state 77
+    struct_declaration    go to state 78
+    assignment_statement  go to state 79
+    expression            go to state 80
+    term                  go to state 28
+
+
+State 133
+
+   40 while_statement: WHILE LPAREN expression RPAREN LBRACE statement_list RBRACE •
+
+    $default  reduce using rule 40 (while_statement)
+
+
+State 134
+
+   33 if_statement: IF LPAREN expression RPAREN LBRACE statement_list RBRACE ELSE • LBRACE statement_list RBRACE
+
+    LBRACE  shift, and go to state 137
+
+
+State 135
+
+   35 for_statement: FOR LPAREN local_declaration expression SEMICOLON incr_expression RPAREN LBRACE • statement_list RBRACE
+
+    $default  reduce using rule 11 (statement_list)
+
+    statement_list  go to state 138
+
+
+State 136
+
+   36 for_statement: FOR LPAREN local_declaration expression SEMICOLON incr_expression RPAREN statement •
+
+    $default  reduce using rule 36 (for_statement)
+
+
+State 137
+
+   33 if_statement: IF LPAREN expression RPAREN LBRACE statement_list RBRACE ELSE LBRACE • statement_list RBRACE
+
+    $default  reduce using rule 11 (statement_list)
+
+    statement_list  go to state 139
+
+
+State 138
+
+   12 statement_list: statement_list • statement
+   35 for_statement: FOR LPAREN local_declaration expression SEMICOLON incr_expression RPAREN LBRACE statement_list • RBRACE
+
+    INT         shift, and go to state 64
+    RETURN      shift, and go to state 65
+    FLOAT       shift, and go to state 6
+    IF          shift, and go to state 66
+    FOR         shift, and go to state 67
+    WHILE       shift, and go to state 68
+    STRUCT      shift, and go to state 7
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 69
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+    RBRACE      shift, and go to state 140
+
+    statement             go to state 71
+    expression_statement  go to state 72
+    declaration           go to state 73
+    local_declaration     go to state 74
+    if_statement          go to state 75
+    for_statement         go to state 76
+    while_statement       go to state 77
+    struct_declaration    go to state 78
+    assignment_statement  go to state 79
+    expression            go to state 80
+    term                  go to state 28
+
+
+State 139
+
+   12 statement_list: statement_list • statement
+   33 if_statement: IF LPAREN expression RPAREN LBRACE statement_list RBRACE ELSE LBRACE statement_list • RBRACE
+
+    INT         shift, and go to state 64
+    RETURN      shift, and go to state 65
+    FLOAT       shift, and go to state 6
+    IF          shift, and go to state 66
+    FOR         shift, and go to state 67
+    WHILE       shift, and go to state 68
+    STRUCT      shift, and go to state 7
+    ADDRESS     shift, and go to state 21
+    PLUSPLUS    shift, and go to state 22
+    IDENTIFIER  shift, and go to state 69
+    STRING      shift, and go to state 24
+    NUMBER      shift, and go to state 25
+    LPAREN      shift, and go to state 26
+    RBRACE      shift, and go to state 141
+
+    statement             go to state 71
+    expression_statement  go to state 72
+    declaration           go to state 73
+    local_declaration     go to state 74
+    if_statement          go to state 75
+    for_statement         go to state 76
+    while_statement       go to state 77
+    struct_declaration    go to state 78
+    assignment_statement  go to state 79
+    expression            go to state 80
+    term                  go to state 28
+
+
+State 140
+
+   35 for_statement: FOR LPAREN local_declaration expression SEMICOLON incr_expression RPAREN LBRACE statement_list RBRACE •
+
+    $default  reduce using rule 35 (for_statement)
+
+
+State 141
+
+   33 if_statement: IF LPAREN expression RPAREN LBRACE statement_list RBRACE ELSE LBRACE statement_list RBRACE •
+
+    $default  reduce using rule 33 (if_statement)

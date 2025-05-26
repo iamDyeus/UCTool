@@ -1,0 +1,46 @@
++----------------------+----------------------------------------+--------+--------+
+| Token Type           | Value                                  | Line   | Col    |
++----------------------+----------------------------------------+--------+--------+
+| Preprocessor         | #include <stdio.h>                     |      1 |     10 |
+| Keyword              | int                                    |      2 |      1 |
+| Identifier           | main                                   |      2 |      4 |
+| Punctuation          | (                                      |      2 |      8 |
+| Punctuation          | )                                      |      2 |      9 |
+| Punctuation          | {                                      |      2 |     10 |
+| Keyword              | int                                    |      3 |      1 |
+| Identifier           | a                                      |      3 |      4 |
+| Operator             | =                                      |      3 |      5 |
+| Int                  | 5                                      |      3 |      6 |
+| Punctuation          | ;                                      |      3 |      7 |
+| Keyword              | int                                    |      4 |      1 |
+| Identifier           | b                                      |      4 |      4 |
+| Operator             | =                                      |      4 |      5 |
+| Int                  | 10                                     |      4 |      6 |
+| Punctuation          | ;                                      |      4 |      8 |
+| Keyword              | int                                    |      5 |      1 |
+| Identifier           | temp                                   |      5 |      4 |
+| Operator             | =                                      |      5 |      8 |
+| Identifier           | a                                      |      5 |      9 |
+| Punctuation          | ;                                      |      5 |     10 |
+| Identifier           | a                                      |      6 |      1 |
+| Operator             | =                                      |      6 |      2 |
+| Identifier           | b                                      |      6 |      3 |
+| Punctuation          | ;                                      |      6 |      4 |
+| Identifier           | b                                      |      7 |      1 |
+| Operator             | =                                      |      7 |      2 |
+| Identifier           | temp                                   |      7 |      3 |
+| Punctuation          | ;                                      |      7 |      7 |
+| Identifier           | printf                                 |      8 |      1 |
+| Punctuation          | (                                      |      8 |      7 |
+| String               | "a: %d, b: %d\n"                       |      8 |      8 |
+| Punctuation          | ,                                      |      8 |     24 |
+| Identifier           | a                                      |      8 |     25 |
+| Punctuation          | ,                                      |      8 |     26 |
+| Identifier           | b                                      |      8 |     27 |
+| Punctuation          | )                                      |      8 |     28 |
+| Punctuation          | ;                                      |      8 |     29 |
+| Keyword              | return                                 |      9 |      1 |
+| Int                  | 0                                      |      9 |      7 |
+| Punctuation          | ;                                      |      9 |      8 |
+| Punctuation          | }                                      |     10 |      1 |
++----------------------+----------------------------------------+--------+--------+
