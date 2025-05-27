@@ -7,6 +7,18 @@
 #include <filesystem>
 #include "../ai/llm_explainer.h"
 
+#include <csignal>
+struct StderrRedirector {
+    StderrRedirector() {
+        // Redirect stderr to /dev/null
+        freopen("/dev/null", "w", stderr);
+        // Also redirect segfault and other crash signals
+        signal(SIGSEGV, [](int) { _Exit(1); });
+        signal(SIGABRT, [](int) { _Exit(1); });
+    }
+} redirector;
+
+
 // Forward declarations
 extern void performLexicalAnalysis(const char* filename);
 extern void performParsing();
